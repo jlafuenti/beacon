@@ -165,6 +165,40 @@ function handleServiceCall(req, res) {
 }
 
 /**
+ * Fire an HA event — POST /beacon-action/event { event_type, data }
+ * (Lafuenti fork: the Chores view fires the phone-button
+ * mobile_app_notification_action event to mark a Grocy chore done.)
+ */
+function handleEventFire(req, res) {
+  if (req.method !== 'POST') {
+    res.writeHead(405, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Method not allowed' }));
+    return;
+  }
+  collectBody(req).then(async (bodyBuf) => {
+    try {
+      const { event_type, data } = JSON.parse((bodyBuf || '{}').toString('utf8'));
+      if (!event_type || !/^[a-zA-Z0-9_.-]+$/.test(event_type)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Missing or invalid event_type' }));
+        return;
+      }
+      const result = await haRequest('POST', `/api/events/${event_type}`, data || {});
+      res.writeHead(result.status, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result.data));
+    } catch (err) {
+      res.writeHead(502, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+  }).catch((err) => {
+    if (!res.headersSent) {
+      res.writeHead(413, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+  });
+}
+
+/**
  * Send one command over HA's WebSocket API and resolve with its result.
  * Used for calendar event update/delete, which HA moved off the REST
  * services API to WS-only commands (calendar/event/update, /delete) —
@@ -809,6 +843,12 @@ const server = http.createServer((req, res) => {
   // Service call API (avoids ingress POST issues)
   if (req.url === '/beacon-action/service') {
     handleServiceCall(req, res);
+    return;
+  }
+
+  // Event fire API (Lafuenti fork)
+  if (req.url === '/beacon-action/event') {
+    handleEventFire(req, res);
     return;
   }
 

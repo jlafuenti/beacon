@@ -1,4 +1,4 @@
-# [1.40.0-lafuenti.2](https://github.com/jlafuenti/beacon/tree/lafuenti) (2026-10-29)
+# [1.40.0-lafuenti.3](https://github.com/jlafuenti/beacon/tree/lafuenti) (2026-10-29)
 
 Lafuenti fork of Beacon 1.40.0 for the kitchen family display. Upstream is
 [asachs01/beacon](https://github.com/asachs01/beacon); nothing here is sent upstream.
@@ -10,6 +10,7 @@ Lafuenti fork of Beacon 1.40.0 for the kitchen family display. Upstream is
 * **lists:** Tasks tab allowlist and default list, Shopping tab honours the grocery allowlist, toggle to hide Beacon's built-in lists; dashboard tasks use the same allowlist
 * **music:** media player allowlist with an entity picker; Default Player is now applied
 * **weather:** panel layout for 1920x1080 — next 24 hours always visible, 7-day grid with highs, lows and precipitation chance, details tiles with sunrise/sunset from sun.sun
+* **chores:** adults' columns on the Chores tab can come from Grocy through HA (sensor.grocy_chores + per-person due lists); unassigned chores show for both adults, Done fires the phone-button event so the HA chore loop completes it in Grocy
 * **alarm:** new Alarm tab — state banner, keypad, Arm Away / Home / Night and Disarm for an alarm_control_panel entity
 
 ### Bug Fixes

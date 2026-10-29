@@ -594,4 +594,23 @@ export const de: Record<TranslationKey, string> = {
   'alarm.state.triggered': 'TRIGGERED',
   'alarm.state.unavailable': 'Unavailable',
   'alarm.state.unknown': 'Unknown',
+
+  // ---- Lafuenti fork: Grocy chores ----
+  'chores.grocyDue': 'Due',
+  'chores.grocyComingUp': 'Coming up',
+  'chores.grocyNothingDue': 'Nothing due',
+  'chores.grocyDueNow': 'Due now',
+  'chores.grocyDueToday': 'Due today',
+  'chores.grocyDueTomorrow': 'Due tomorrow',
+  'chores.grocyOverdue': 'Overdue since {date}',
+  'chores.grocyMarkDone': 'Mark {name} done',
+  'chores.grocyManaged': 'Scheduled in Grocy',
+  'settings.chores.grocyTitle': 'Grocy',
+  'settings.chores.grocyEnabledLabel': 'Adults\' chores from Grocy',
+  'settings.chores.grocyEnabledSublabel': 'Parents\' columns show Grocy chores via Home Assistant; children keep Beacon\'s own chores',
+  'settings.chores.grocySensorLabel': 'Grocy chores sensor',
+  'settings.chores.grocySensorSublabel': 'The Grocy integration\'s chores sensor (its chores attribute)',
+  'settings.chores.grocyListLabel': '{name}\'s due list',
+  'settings.chores.grocyListSublabel': 'Todo list holding this person\'s due chores (item description chore_id:N)',
+  'settings.chores.grocyListAuto': 'Auto (todo.<name>_s_chores)',
 };

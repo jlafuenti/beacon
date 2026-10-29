@@ -1036,6 +1036,124 @@
   padding: 16px;
 }
 
+/* --- Grocy-backed adult columns (Lafuenti fork) --- */
+.grocy-chore-count {
+  margin-left: auto;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 11px;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.grocy-chore-group-title {
+  margin: 4px 0 6px;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.grocy-chore-group-title--later {
+  margin-top: 16px;
+}
+
+.grocy-chore-card {
+  gap: 14px;
+  min-height: 64px;
+}
+
+.grocy-chore-card--overdue {
+  box-shadow: inset 3px 0 0 var(--color-error);
+}
+
+.grocy-chore-done {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background var(--transition), transform 0.08s;
+}
+
+.grocy-chore-done:active { transform: scale(0.94); }
+.grocy-chore-done:disabled { opacity: 0.5; cursor: wait; }
+
+.grocy-chore-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.grocy-chore-when {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.grocy-chore-when--overdue {
+  color: var(--color-error);
+  font-weight: 600;
+}
+
+.grocy-chore-upcoming {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.grocy-chore-upcoming-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.grocy-chore-upcoming-icon {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.grocy-chore-upcoming-name {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.grocy-chore-upcoming-date {
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.grocy-chore-footer {
+  margin-top: 8px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
 .chores-member-col-list {
   flex: 1;
   min-height: 0;

@@ -1900,6 +1900,58 @@ export function SettingsView({
       {settings.choresEnabled && (
         <>
           <div className="settings-group">
+            <div className="settings-group-title">{t('settings.chores.grocyTitle')}</div>
+            <div className="settings-row">
+              <div>
+                <div className="settings-row-label">{t('settings.chores.grocyEnabledLabel')}</div>
+                <div className="settings-row-sublabel">{t('settings.chores.grocyEnabledSublabel')}</div>
+              </div>
+              <Toggle
+                checked={settings.grocyChoresEnabled}
+                onChange={(v) => onUpdateSettings({ grocyChoresEnabled: v })}
+              />
+            </div>
+            {settings.grocyChoresEnabled && (
+              <>
+                <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 12 }}>
+                  <div>
+                    <div className="settings-row-label">{t('settings.chores.grocySensorLabel')}</div>
+                    <div className="settings-row-sublabel">{t('settings.chores.grocySensorSublabel')}</div>
+                  </div>
+                  <EntityPicker
+                    value={settings.grocyChoresSensor}
+                    defaultDomain="sensor"
+                    onChange={(entityId) => onUpdateSettings({ grocyChoresSensor: entityId })}
+                  />
+                </div>
+                {members.filter((m) => m.role === 'parent').map((m) => (
+                  <div key={m.id} className="settings-row">
+                    <div>
+                      <div className="settings-row-label">{t('settings.chores.grocyListLabel', { name: m.name })}</div>
+                      <div className="settings-row-sublabel">{t('settings.chores.grocyListSublabel')}</div>
+                    </div>
+                    <select
+                      className="settings-input"
+                      value={settings.grocyChoreLists[m.name] ?? ''}
+                      onChange={(e) => {
+                        const next = { ...settings.grocyChoreLists };
+                        if (e.target.value) next[m.name] = e.target.value;
+                        else delete next[m.name];
+                        onUpdateSettings({ grocyChoreLists: next });
+                      }}
+                    >
+                      <option value="">{t('settings.chores.grocyListAuto')}</option>
+                      {todoLists.map((list) => (
+                        <option key={list.id} value={list.id}>{list.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+
+          <div className="settings-group">
             <div className="settings-row">
               <div>
                 <div className="settings-row-label">{t('settings.chores.dailyResetTimeLabel')}</div>

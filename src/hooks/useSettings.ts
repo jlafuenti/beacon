@@ -75,6 +75,11 @@ export interface BeaconSettings {
 
   // Chores
   choresEnabled: boolean;
+  /** Adults' chores come from Grocy via HA (sensor + per-person todo lists) instead of Beacon's store. */
+  grocyChoresEnabled: boolean;
+  grocyChoresSensor: string;
+  /** Member name → todo entity holding that person's due chores (default todo.<name>_s_chores). */
+  grocyChoreLists: Record<string, string>;
   choresResetTime: string;  // "HH:mm"
   streakDays: number;
   currencySymbol: string;
@@ -141,6 +146,9 @@ function buildDefaults(): BeaconSettings {
     kioskMode: false,
 
     choresEnabled: true,
+    grocyChoresEnabled: false,
+    grocyChoresSensor: 'sensor.grocy_chores',
+    grocyChoreLists: {},
     choresResetTime: '00:00',
     streakDays: 7,
     currencySymbol: '$',

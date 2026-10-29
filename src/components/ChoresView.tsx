@@ -6,6 +6,8 @@ import { StreakBadge } from './StreakBadge';
 import { useChores } from '../hooks/useChores';
 import { useFamily } from '../hooks/useFamily';
 import { useSettings } from '../hooks/useSettings';
+import { useGrocyChores } from '../hooks/useGrocyChores';
+import { GrocyChoreColumn } from './GrocyChoreColumn';
 import { useTranslation } from '../i18n';
 
 const CHORE_ICONS = ['🧹', '🍽️', '🐕', '🛏️', '📚', '🗑️', '👕', '🧺', '🪥', '🚿', '🧼', '💪'];
@@ -171,6 +173,14 @@ export function ChoresView() {
     getMemberProgress,
   } = useChores();
 
+  // Lafuenti fork: the adults' chores live in Grocy, read through HA.
+  const grocy = useGrocyChores(members, {
+    enabled: settings.grocyChoresEnabled,
+    sensorEntity: settings.grocyChoresSensor,
+    listsByMember: settings.grocyChoreLists,
+  });
+  const grocyByMemberId = new Map(grocy.byMember.map((g) => [g.member.id, g]));
+
   const [showForm, setShowForm] = useState(false);
   const [editingChoreId, setEditingChoreId] = useState<string | null>(null);
   const [newChore, setNewChore] = useState({ ...EMPTY_CHORE_FORM });
@@ -311,7 +321,18 @@ export function ChoresView() {
             className="chores-family-grid"
             style={{ '--member-count': members.length } as React.CSSProperties}
           >
-          {memberChoreGroups.map(({ member, chores: memberChores, progress, streak }) => (
+          {memberChoreGroups.map(({ member, chores: memberChores, progress, streak }) => {
+            const grocyGroup = settings.grocyChoresEnabled ? grocyByMemberId.get(member.id) : undefined;
+            if (grocyGroup) {
+              return (
+                <GrocyChoreColumn
+                  key={member.id}
+                  group={grocyGroup}
+                  onComplete={grocy.completeChore}
+                />
+              );
+            }
+            return (
             <section key={member.id} className="chores-member-col">
               <div className="dash-member-header">
                 <span
@@ -374,7 +395,8 @@ export function ChoresView() {
                 {t('chores.addChoreFor', { name: member.name })}
               </button>
             </section>
-          ))}
+            );
+          })}
         </div>
         </>
       )}

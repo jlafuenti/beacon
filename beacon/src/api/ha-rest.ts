@@ -110,6 +110,28 @@ export async function callHaService(
 }
 
 /**
+ * Fire a Home Assistant event (POST /api/events/<type>).
+ * In add-on mode this goes through /beacon-action/event, like service calls,
+ * because the ingress proxy can mangle POST bodies on /api/* paths.
+ */
+export async function fireHaEvent(eventType: string, data?: Record<string, unknown>): Promise<unknown> {
+  if (isAddOn()) {
+    const base = getBaseUrl();
+    const res = await fetch(`${base}/beacon-action/event`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event_type: eventType, data: data ?? {} }),
+    });
+    if (!res.ok) throw new Error(`Event ${res.status}: ${res.statusText}`);
+    return res.json();
+  }
+  return haFetch(`/api/events/${eventType}`, {
+    method: 'POST',
+    body: JSON.stringify(data ?? {}),
+  });
+}
+
+/**
  * Fetch a single entity state from the HA REST API.
  */
 export async function getEntityState(entityId: string): Promise<{
