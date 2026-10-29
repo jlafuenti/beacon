@@ -37,7 +37,7 @@ export interface GrocyMemberChores {
   member: FamilyMember;
   /** Chores with an open item on this person's list (overdue ones flagged). */
   due: GrocyChoreRow[];
-  /** The rest of this person's chores that have a next date, soonest first. */
+  /** The rest of this person's chores due within the next week, soonest first. */
   comingUp: GrocyChoreRow[];
 }
 
@@ -58,6 +58,8 @@ interface TodoItem {
 
 const REFRESH_MS = 60_000;
 const CHORE_ID_RE = /chore_id:(\d+)/;
+/** "Coming up" only looks this far ahead. */
+const COMING_UP_DAYS = 7;
 
 /** Convention when no explicit list is configured: todo.<first name>_s_chores. */
 export function defaultChoreList(member: FamilyMember): string {
@@ -154,6 +156,7 @@ export function useGrocyChores(members: FamilyMember[], options: UseGrocyChoresO
 
   const byMember: GrocyMemberChores[] = useMemo(() => {
     const today = startOfToday();
+    const horizon = today + COMING_UP_DAYS * 24 * 60 * 60 * 1000;
     return adults.map((member) => {
       const listId = resolveChoreList(member, options.listsByMember);
       const items = openItems[listId] ?? [];
@@ -172,10 +175,11 @@ export function useGrocyChores(members: FamilyMember[], options: UseGrocyChoresO
         const item = dueByChore.get(chore.id);
         if (item) {
           due.push({ ...chore, overdue, dueItem: { uid: item.uid, due: item.due } });
-        } else if (chore.nextDue) {
+        } else if (chore.nextDue && new Date(chore.nextDue).getTime() < horizon) {
           comingUp.push({ ...chore, overdue });
         }
         // null next date and no list item: sensor-driven, not due → hidden
+        // next date beyond the week: not shown yet
       }
       const byDate = (a: GrocyChoreRow, b: GrocyChoreRow) => (a.nextDue ?? '').localeCompare(b.nextDue ?? '');
       due.sort(byDate);
