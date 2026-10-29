@@ -1,8 +1,40 @@
 import { Photo } from '../types/photos';
 import { getConfig } from '../config';
 import { haFetch, hasToken } from './ha-rest';
+import { isAddOn, getIngressBasePath } from '../utils/ha-env';
 
 const { photo_directory: PHOTOS_PATH } = getConfig();
+
+interface AddOnPhotoEntry {
+  name: string;
+  /** URL-encoded path under /media, served by the add-on at /beacon-media/<path>. */
+  path: string;
+}
+
+/**
+ * Add-on mode: HA core has no REST route for media_source browse/resolve
+ * (they are WebSocket-only), so the add-on server lists the mapped /media
+ * directory itself and serves the files (see server.js, Lafuenti fork).
+ */
+async function fetchAddOnPhotos(): Promise<Photo[]> {
+  const base = getIngressBasePath();
+  try {
+    const res = await fetch(`${base}/beacon-action/photos?dir=${encodeURIComponent(PHOTOS_PATH)}`);
+    if (!res.ok) {
+      console.warn(`Beacon: photo listing failed (${res.status})`);
+      return [];
+    }
+    const data = (await res.json()) as { photos?: AddOnPhotoEntry[] };
+    return (data.photos ?? []).map((entry) => ({
+      url: `${base}/beacon-media/${entry.path}`,
+      caption: entry.name.replace(/\.[^.]+$/, ''),
+      source: 'local' as const,
+    }));
+  } catch (err) {
+    console.warn('Beacon: Failed to fetch add-on photos', err);
+    return [];
+  }
+}
 
 /**
  * Shuffles an array in place using Fisher-Yates.
@@ -111,11 +143,19 @@ export async function getPhotos(
 ): Promise<Photo[]> {
   const fetchers: Promise<Photo[]>[] = [];
 
-  if (sources.includes('ha_media')) {
-    fetchers.push(fetchHAMediaPhotos());
-  }
-  if (sources.includes('local')) {
-    fetchers.push(fetchLocalPhotos());
+  if (isAddOn()) {
+    // One source in add-on mode: the configured photo_directory, read from
+    // the mapped /media share. The media-browser root is not useful here.
+    if (sources.includes('local') || sources.includes('ha_media')) {
+      fetchers.push(fetchAddOnPhotos());
+    }
+  } else {
+    if (sources.includes('ha_media')) {
+      fetchers.push(fetchHAMediaPhotos());
+    }
+    if (sources.includes('local')) {
+      fetchers.push(fetchLocalPhotos());
+    }
   }
   // google_photos would require OAuth — not implemented yet
 

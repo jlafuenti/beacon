@@ -1,4 +1,4 @@
-# [1.40.0-lafuenti.1](https://github.com/jlafuenti/beacon/tree/lafuenti) (2026-10-29)
+# [1.40.0-lafuenti.2](https://github.com/jlafuenti/beacon/tree/lafuenti) (2026-10-29)
 
 Lafuenti fork of Beacon 1.40.0 for the kitchen family display. Upstream is
 [asachs01/beacon](https://github.com/asachs01/beacon); nothing here is sent upstream.
@@ -14,6 +14,7 @@ Lafuenti fork of Beacon 1.40.0 for the kitchen family display. Upstream is
 
 ### Bug Fixes
 
+* **photos:** the Photos tab lists the photo_directory from the add-on's read-only /media map and serves the files itself; HA has no REST media_source routes, so upstream's browse/resolve calls 404 through ingress
 * **app:** the saved Default View is applied once settings load instead of being read before they arrive
 
 # [1.40.0](https://github.com/asachs01/beacon/compare/v1.39.6...v1.40.0) (2026-10-17)

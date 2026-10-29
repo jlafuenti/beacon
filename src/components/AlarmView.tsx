@@ -155,9 +155,6 @@ export function AlarmView({ entityId }: AlarmViewProps) {
     setBusy(null);
     if (moved) {
       setCode('');
-    } else if (service === 'alarm_disarm' && before === 'disarmed') {
-      // Already disarmed: nothing to move, but a wrong code is still worth saying.
-      rejectCode(t('alarm.codeRejected'));
     } else {
       rejectCode(t('alarm.codeRejected'));
     }
@@ -268,7 +265,7 @@ export function AlarmView({ entityId }: AlarmViewProps) {
             type="button"
             className={`alarm-action alarm-action--disarm${busy === 'alarm_disarm' ? ' alarm-action--busy' : ''}`}
             onClick={() => send('alarm_disarm')}
-            disabled={dead || busy !== null}
+            disabled={dead || busy !== null || isDisarmed}
           >
             {busy === 'alarm_disarm' ? <Loader2 size={26} className="alarm-spin" /> : <ShieldOff size={26} strokeWidth={1.75} />}
             <span>{t('alarm.disarm')}</span>

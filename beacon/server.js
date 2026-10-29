@@ -698,7 +698,108 @@ function handleVoiceAction(req, res) {
   });
 }
 
+/* ------------------------------------------------------------------ */
+/*  Photos (Lafuenti fork)                                             */
+/*                                                                     */
+/*  HA core exposes media_source browse/resolve only as WebSocket      */
+/*  commands, so the REST paths the upstream client called 404 through */
+/*  the ingress proxy and the Photos tab stayed empty. The add-on maps */
+/*  /media read-only (config.yaml `map`), lists the photo directory    */
+/*  straight from disk and serves the files itself.                    */
+/* ------------------------------------------------------------------ */
+
+const MEDIA_ROOT = '/media';
+const IMAGE_TYPES = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.bmp': 'image/bmp',
+  '.avif': 'image/avif',
+  '.heic': 'image/heic',
+};
+
+/** Resolve a /media-relative request path, refusing anything that escapes MEDIA_ROOT. */
+function resolveMediaPath(relative) {
+  const decoded = decodeURIComponent(relative).replace(/^\/+/, '');
+  const full = path.resolve(MEDIA_ROOT, decoded);
+  if (full !== MEDIA_ROOT && !full.startsWith(MEDIA_ROOT + path.sep)) return null;
+  return full;
+}
+
+/**
+ * GET /beacon-action/photos?dir=/media/beacon/photos
+ * Returns { photos: [{ name, path }] } — `path` is what /beacon-media/ serves.
+ */
+async function handlePhotosList(req, res) {
+  if (req.method !== 'GET') {
+    res.writeHead(405, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Method not allowed' }));
+    return;
+  }
+  const url = new URL(req.url, 'http://localhost');
+  const dirParam = url.searchParams.get('dir') || '/media/beacon/photos';
+  const relative = dirParam.replace(/^\/?media\/?/, '');
+  const dir = resolveMediaPath(relative);
+  if (!dir) {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Directory must be under /media' }));
+    return;
+  }
+  try {
+    const entries = await fsp.readdir(dir, { withFileTypes: true });
+    const photos = entries
+      .filter((e) => e.isFile() && IMAGE_TYPES[path.extname(e.name).toLowerCase()])
+      .map((e) => ({
+        name: e.name,
+        path: path.posix.join(relative, e.name).split('/').map(encodeURIComponent).join('/'),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ photos }));
+  } catch (err) {
+    const status = err.code === 'ENOENT' ? 404 : 500;
+    res.writeHead(status, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: err.code === 'ENOENT' ? `Photo directory not found: ${dirParam} (is /media mapped into the add-on?)` : err.message }));
+  }
+}
+
+/** GET /beacon-media/<path under /media> — streams one image file. */
+function handleMediaFile(req, res) {
+  const relative = req.url.replace(/^\/beacon-media\//, '').split('?')[0];
+  const file = resolveMediaPath(relative);
+  const type = file ? IMAGE_TYPES[path.extname(file).toLowerCase()] : null;
+  if (!file || !type) {
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Not found' }));
+    return;
+  }
+  fsp.stat(file).then((st) => {
+    if (!st.isFile()) throw Object.assign(new Error('not a file'), { code: 'ENOENT' });
+    res.writeHead(200, {
+      'Content-Type': type,
+      'Content-Length': st.size,
+      'Cache-Control': 'private, max-age=3600',
+    });
+    fs.createReadStream(file).on('error', () => res.destroy()).pipe(res);
+  }).catch((err) => {
+    res.writeHead(err.code === 'ENOENT' ? 404 : 500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: err.message }));
+  });
+}
+
 const server = http.createServer((req, res) => {
+  // Photo listing + image files (Lafuenti fork)
+  if (req.url.startsWith('/beacon-action/photos')) {
+    handlePhotosList(req, res);
+    return;
+  }
+  if (req.url.startsWith('/beacon-media/')) {
+    handleMediaFile(req, res);
+    return;
+  }
+
   // Voice / natural-language action API
   if (req.url === '/beacon-action/voice') {
     handleVoiceAction(req, res);

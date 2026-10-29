@@ -167,7 +167,7 @@
 
 .alarm-key {
   height: 92px;
-  border: none;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
   border-radius: 16px;
   background: var(--bg-primary);
   color: var(--text-primary);
