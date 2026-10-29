@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
-import { Chore, FamilyMember, STAR_CURRENCY, formatChoreValue } from '../types/family';
+import { Chore, FamilyMember, STAR_CURRENCY, formatChoreValue, hasChores } from '../types/family';
 import { ChoreCard } from './ChoreCard';
 import { StreakBadge } from './StreakBadge';
 import { useChores } from '../hooks/useChores';
@@ -158,8 +158,11 @@ function UnassignedChoreCard({
 
 export function ChoresView() {
   const { t } = useTranslation();
-  const { members } = useFamily();
+  const { members: allMembers } = useFamily();
   const { settings } = useSettings();
+  // Lafuenti fork: members with chores switched off (Settings > Family) keep
+  // their calendars but get no column here and cannot be assigned chores.
+  const members = allMembers.filter(hasChores);
   const {
     chores,
     addChore,

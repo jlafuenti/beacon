@@ -1,4 +1,4 @@
-# [1.40.0-lafuenti.6](https://github.com/jlafuenti/beacon/tree/lafuenti) (2026-10-29)
+# [1.40.0-lafuenti.7](https://github.com/jlafuenti/beacon/tree/lafuenti) (2026-10-29)
 
 Lafuenti fork of Beacon 1.40.0 for the kitchen family display. Upstream is
 [asachs01/beacon](https://github.com/asachs01/beacon); nothing here is sent upstream.
@@ -11,6 +11,7 @@ Lafuenti fork of Beacon 1.40.0 for the kitchen family display. Upstream is
 * **music:** media player allowlist with an entity picker; Default Player is now applied
 * **weather:** panel layout for 1920x1080 — next 24 hours always visible, 7-day grid with highs, lows and precipitation chance, details tiles with sunrise/sunset from sun.sun
 * **chores:** adults' columns on the Chores tab can come from Grocy (Coming up limited to the next 7 days) through HA (sensor.grocy_chores + per-person due lists); unassigned chores show for both adults, Done fires the phone-button event so the HA chore loop completes it in Grocy
+* **family:** per-member Has chores switch (Settings > Family): off drops the member from the Chores tab and from chore assignment while their calendars keep working
 * **screensaver:** optional photo album behind the screensaver clock (Settings > Display > Photo Screen Saver), using the slideshow interval
 * **alarm:** new Alarm tab — state banner, keypad, Arm Away / Home / Night and Disarm for an alarm_control_panel entity
 

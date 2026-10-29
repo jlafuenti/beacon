@@ -11,6 +11,13 @@ export interface FamilyMember {
    *  too instead of falling into the "Other" bucket. `calendar_entity`
    *  remains the primary/back-compat single-calendar field. */
   additional_calendar_entities?: string[];
+  /** false hides this member from the Chores tab (no column, not assignable); calendars are unaffected. Default true. */
+  chores_enabled?: boolean;
+}
+
+/** Members who take part in chores (the `chores_enabled` flag defaults to on). */
+export function hasChores(member: FamilyMember): boolean {
+  return member.chores_enabled !== false;
 }
 
 export interface Chore {

@@ -182,9 +182,11 @@ interface MemberForm {
   pin: string;
   calendar_entity: string;
   additional_calendar_entities: string[];
+  chores_enabled: boolean;
 }
 
 const EMPTY_FORM: MemberForm = {
+  chores_enabled: true,
   name: '',
   avatar: '🧑',
   color: MEMBER_COLORS[0],
@@ -287,6 +289,7 @@ export function SettingsView({
       pin: member.pin ?? '',
       calendar_entity: member.calendar_entity ?? '',
       additional_calendar_entities: member.additional_calendar_entities ?? [],
+      chores_enabled: member.chores_enabled !== false,
     });
     setEditingMember(member.id);
     setMemberFormMode('edit');
@@ -304,6 +307,7 @@ export function SettingsView({
       additional_calendar_entities: memberForm.additional_calendar_entities.length > 0
         ? memberForm.additional_calendar_entities
         : undefined,
+      chores_enabled: memberForm.chores_enabled,
     };
     if (memberFormMode === 'edit' && editingMember) {
       onUpdateMember(editingMember, data);
@@ -973,7 +977,10 @@ export function SettingsView({
                 </div>
                 <div className="settings-fm-info">
                   <div className="settings-fm-name">{member.name}</div>
-                  <div className="settings-fm-role">{member.role === 'parent' ? t('settings.family.parent') : t('settings.family.child')}</div>
+                  <div className="settings-fm-role">
+                    {member.role === 'parent' ? t('settings.family.parent') : t('settings.family.child')}
+                    {member.chores_enabled === false && ` · ${t('settings.family.noChores')}`}
+                  </div>
                 </div>
                 <div className="settings-fm-actions">
                   <button
@@ -1052,6 +1059,16 @@ export function SettingsView({
                 { value: 'child', label: t('settings.family.child') },
               ]}
               onChange={(v) => setMemberForm((f) => ({ ...f, role: v }))}
+            />
+          </div>
+          <div className="settings-row">
+            <div>
+              <div className="settings-row-label">{t('settings.family.choresEnabledLabel')}</div>
+              <div className="settings-row-sublabel">{t('settings.family.choresEnabledSublabel')}</div>
+            </div>
+            <Toggle
+              checked={memberForm.chores_enabled}
+              onChange={(v) => setMemberForm((f) => ({ ...f, chores_enabled: v }))}
             />
           </div>
           <div className="settings-row" style={{ alignItems: 'flex-start' }}>

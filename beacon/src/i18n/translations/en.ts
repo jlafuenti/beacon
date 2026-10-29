@@ -630,6 +630,11 @@ export const en = {
   // ---- Lafuenti fork: photo screensaver ----
   'settings.display.screenSaverPhotosLabel': 'Photo Screen Saver',
   'settings.display.screenSaverPhotosSublabel': 'Cycle the photo album behind the clock, using the slideshow interval',
+
+  // ---- Lafuenti fork: per-member chores switch ----
+  'settings.family.choresEnabledLabel': 'Has chores',
+  'settings.family.choresEnabledSublabel': 'Off: no column on the Chores tab and not assignable; calendars still work',
+  'settings.family.noChores': 'No chores',
 } as const;
 
 export type TranslationKey = keyof typeof en;

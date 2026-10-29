@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { haFetch, callHaService, fireHaEvent, hasToken } from '../api/ha-rest';
-import { FamilyMember } from '../types/family';
+import { FamilyMember, hasChores } from '../types/family';
 
 /**
  * Grocy-backed chores for the adults (Lafuenti fork).
@@ -101,7 +101,7 @@ function startOfToday(): number {
 
 export function useGrocyChores(members: FamilyMember[], options: UseGrocyChoresOptions) {
   const { enabled, sensorEntity } = options;
-  const adults = useMemo(() => members.filter((m) => m.role === 'parent'), [members]);
+  const adults = useMemo(() => members.filter((m) => m.role === 'parent' && hasChores(m)), [members]);
   const listKey = adults.map((m) => `${m.id}=${resolveChoreList(m, options.listsByMember)}`).join('|');
 
   const [chores, setChores] = useState<GrocyChore[]>([]);
