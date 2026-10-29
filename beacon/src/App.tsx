@@ -14,7 +14,8 @@ import { SettingsView } from './components/SettingsView';
 import { useSettings } from './hooks/useSettings';
 import { ChoresView } from './components/ChoresView';
 import { Leaderboard } from './components/Leaderboard';
-import { Sidebar, SidebarView } from './components/Sidebar';
+import { Sidebar, SidebarView, resolveVisibleNav } from './components/Sidebar';
+import { AlarmView } from './components/AlarmView';
 import { MusicView } from './components/MusicView';
 import { PhotoFrame } from './components/PhotoFrame';
 import { NowPlayingBar } from './components/NowPlayingBar';
@@ -46,6 +47,7 @@ export function App() {
   const { isIngress, compact } = useIngressDetect();
   const {
     settings,
+    loaded: settingsLoaded,
     updateSettings,
     resetSettings,
     exportSettings,
@@ -123,7 +125,10 @@ export function App() {
   }, [localCal, deleteHaEvent]);
 
   const { weather } = useWeather(client);
-  const music = useMusic(client, connected);
+  const music = useMusic(client, connected, {
+    playerIds: settings.musicPlayerIds,
+    defaultPlayer: settings.musicDefaultPlayer,
+  });
   const {
     chores,
     completionsToday,
@@ -131,7 +136,12 @@ export function App() {
     uncompleteChore,
   } = useChores();
 
-  const dashboardTasks = useDashboardTasks(connected, settings.groceryListIds);
+  const dashboardTasks = useDashboardTasks(
+    connected,
+    settings.groceryListIds,
+    settings.taskListIds,
+    !settings.hideLocalLists,
+  );
 
   // Apply theme at App level so it stays active regardless of which view is shown
   const { setTheme } = useTheme();
@@ -163,6 +173,27 @@ export function App() {
   const [activeView, setActiveView] = useState<SidebarView>(
     (settings.defaultView as SidebarView) || 'dashboard'
   );
+
+  // Sidebar tabs the user kept, in their order (Settings → General → Sidebar tabs).
+  const visibleNav = useMemo(
+    () => resolveVisibleNav(settings.navOrder, settings.hiddenViews),
+    [settings.navOrder, settings.hiddenViews],
+  );
+
+  // The useState initialiser above runs with the in-memory defaults, before
+  // the server-side settings arrive, so a saved Default View never applied.
+  // Apply it once when settings finish loading — unless the user has already
+  // navigated somewhere, in which case their choice wins.
+  const userNavigatedRef = useRef(false);
+  const defaultViewAppliedRef = useRef(false);
+  useEffect(() => {
+    if (!settingsLoaded || defaultViewAppliedRef.current) return;
+    defaultViewAppliedRef.current = true;
+    if (userNavigatedRef.current) return;
+    const wanted = (settings.defaultView as SidebarView) || 'dashboard';
+    const hidden = settings.hiddenViews.includes(wanted);
+    setActiveView(hidden ? (visibleNav[0]?.id ?? 'dashboard') : wanted);
+  }, [settingsLoaded, settings.defaultView, settings.hiddenViews, visibleNav]);
 
   // Kid Display (focus) mode — URL param wins, then device-local storage
   const [focusMemberId, setFocusMemberId] = useState<string | null>(() => getFocusMemberId());
@@ -431,6 +462,7 @@ export function App() {
 
   const handleChangeView = useCallback(
     (view: SidebarView) => {
+      userNavigatedRef.current = true;
       // Leaderboard opens as an overlay, doesn't change the main view.
       // Chores is a real activeView now (dedicated full-screen view).
       if (view === 'leaderboard') {
@@ -483,20 +515,13 @@ export function App() {
     auth.startOAuth(haUrl);
   }, [auth]);
 
-  // Keyboard shortcuts for quick view switching
+  // Keyboard shortcuts for quick view switching: digits 1-9 follow the
+  // sidebar order (hidden tabs skipped), 0 opens Settings.
   useEffect(() => {
-    const viewMap: Record<string, SidebarView> = {
-      '1': 'dashboard',
-      '2': 'calendar',
-      '3': 'chores',
-      '4': 'grocery',
-      '5': 'tasks',
-      '6': 'leaderboard',
-      '7': 'music',
-      '8': 'photos',
-      '9': 'timer',
-      '0': 'settings',
-    };
+    const viewMap: Record<string, SidebarView> = { '0': 'settings' };
+    visibleNav.slice(0, 9).forEach((item, i) => {
+      viewMap[String(i + 1)] = item.id;
+    });
 
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't intercept when typing in inputs
@@ -506,13 +531,13 @@ export function App() {
       const view = viewMap[e.key];
       if (view) {
         e.preventDefault();
-        setActiveView(view);
+        handleChangeView(view);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [visibleNav, handleChangeView]);
 
   const sidebarPos = settings.sidebarPosition || 'left';
 
@@ -581,6 +606,8 @@ export function App() {
           activeView={activeView}
           onChangeView={handleChangeView}
           position={sidebarPos}
+          navOrder={settings.navOrder}
+          hiddenViews={settings.hiddenViews}
         />
       )}
 
@@ -652,9 +679,22 @@ export function App() {
             onEnterFocusMode={handleEnterFocusMode}
           />
         ) : activeView === 'grocery' ? (
-          <GroceryView defaultListId={settings.defaultGroceryList || undefined} mode="grocery" groceryListIds={settings.groceryListIds} />
+          <GroceryView
+            defaultListId={settings.defaultGroceryList || undefined}
+            mode="grocery"
+            groceryListIds={settings.groceryListIds}
+            hideLocalLists={settings.hideLocalLists}
+          />
         ) : activeView === 'tasks' ? (
-          <GroceryView mode="tasks" groceryListIds={settings.groceryListIds} />
+          <GroceryView
+            defaultListId={settings.defaultTaskList || undefined}
+            mode="tasks"
+            groceryListIds={settings.groceryListIds}
+            taskListIds={settings.taskListIds}
+            hideLocalLists={settings.hideLocalLists}
+          />
+        ) : activeView === 'alarm' ? (
+          <AlarmView entityId={settings.alarmEntity} />
         ) : activeView === 'timer' ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', padding: 24 }}>
             <Timer />
@@ -721,6 +761,8 @@ export function App() {
                 todoItems={dashboardTasks.items}
                 onToggleTodo={dashboardTasks.toggleItem}
                 members={members}
+                mode={settings.calendarSidebarMode}
+                shoppingEntity={settings.shoppingEntity}
               />
             </div>
 

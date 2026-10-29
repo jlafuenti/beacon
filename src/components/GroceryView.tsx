@@ -38,9 +38,19 @@ interface GroceryViewProps {
   mode?: ListViewMode;
   /** Explicit list of HA todo entity IDs that are grocery/shopping lists */
   groceryListIds?: string[];
+  /** Allowlist of HA todo entity IDs for tasks mode (empty = every non-grocery list) */
+  taskListIds?: string[];
+  /** Hide Beacon's built-in local To-Do / Shopping lists */
+  hideLocalLists?: boolean;
 }
 
-export function GroceryView({ defaultListId, mode = 'grocery', groceryListIds = [] }: GroceryViewProps) {
+export function GroceryView({
+  defaultListId,
+  mode = 'grocery',
+  groceryListIds = [],
+  taskListIds = [],
+  hideLocalLists = false,
+}: GroceryViewProps) {
   const { t } = useTranslation();
   const [haLists, setHaLists] = useState<GroceryList[]>([]);
   const [selectedListId, setSelectedListId] = useState<string>(defaultListId || '');
@@ -73,16 +83,23 @@ export function GroceryView({ defaultListId, mode = 'grocery', groceryListIds = 
     // Filter by mode: grocery lists vs task lists
     if (mode === 'grocery') {
       return merged.filter(l =>
-        l.id === 'beacon-shopping' ||
+        (l.id === 'beacon-shopping' && !hideLocalLists) ||
         (defaultListId != null && defaultListId !== '' && l.id === defaultListId) ||
         (l.source === 'ha' && isGroceryHA(l.id, l.name))
       );
     }
+    // tasks mode with an allowlist: local To-Do (unless hidden) + the chosen HA lists, in allowlist order
+    if (taskListIds.length > 0) {
+      const local = hideLocalLists ? [] : merged.filter(l => l.id === 'beacon-todo');
+      const byId = new Map(merged.filter(l => l.source === 'ha').map(l => [l.id, l]));
+      const chosen = taskListIds.map(id => byId.get(id)).filter((l): l is UnifiedList => !!l);
+      return [...local, ...chosen];
+    }
     // tasks mode: local To-Do + all HA lists that aren't grocery
     return merged.filter(l =>
-      l.id === 'beacon-todo' || (l.source === 'ha' && !isGroceryHA(l.id, l.name))
+      (l.id === 'beacon-todo' && !hideLocalLists) || (l.source === 'ha' && !isGroceryHA(l.id, l.name))
     );
-  }, [haLists, localTasks.lists, mode, defaultListId, groceryListIds]);
+  }, [haLists, localTasks.lists, mode, defaultListId, groceryListIds, taskListIds, hideLocalLists]);
 
   const selectedList = allLists.find(l => l.id === selectedListId);
   const isLocal = selectedList?.source === 'local';

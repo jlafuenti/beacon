@@ -11,30 +11,36 @@ import {
   Settings,
   Timer as TimerIcon,
   CloudSun,
+  ShieldCheck,
   MoreHorizontal,
   X,
 } from 'lucide-react';
 import beaconIcon from '../assets/beacon-app-icon.svg';
 import { useTranslation, type TranslationKey } from '../i18n';
 
-export type SidebarView = 'dashboard' | 'calendar' | 'chores' | 'grocery' | 'tasks' | 'leaderboard' | 'music' | 'photos' | 'timer' | 'weather' | 'settings';
+export type SidebarView = 'dashboard' | 'calendar' | 'chores' | 'grocery' | 'tasks' | 'leaderboard' | 'music' | 'photos' | 'timer' | 'weather' | 'alarm' | 'settings';
 
 interface SidebarProps {
   activeView: SidebarView;
   onChangeView: (view: SidebarView) => void;
   position?: 'left' | 'right' | 'bottom';
+  /** Tab order from Settings → General → Sidebar tabs. Missing views are appended. */
+  navOrder?: SidebarView[];
+  /** Tabs removed from the nav. */
+  hiddenViews?: SidebarView[];
 }
 
 const ICON_SIZE = 24;
 const STROKE_WIDTH = 1.5;
 
-interface NavItem {
+export interface NavItem {
   id: SidebarView;
   icon: React.ReactNode;
   labelKey: TranslationKey;
 }
 
-const NAV_ITEMS: NavItem[] = [
+/** Every main-nav view in Beacon's default order (Settings lives in the bottom group). */
+export const NAV_ITEMS: NavItem[] = [
   { id: 'dashboard', icon: <LayoutDashboard size={ICON_SIZE} strokeWidth={STROKE_WIDTH} />, labelKey: 'nav.dashboard' },
   { id: 'calendar', icon: <Calendar size={ICON_SIZE} strokeWidth={STROKE_WIDTH} />, labelKey: 'nav.calendar' },
   { id: 'chores', icon: <ListChecks size={ICON_SIZE} strokeWidth={STROKE_WIDTH} />, labelKey: 'nav.chores' },
@@ -45,7 +51,41 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'photos', icon: <Image size={ICON_SIZE} strokeWidth={STROKE_WIDTH} />, labelKey: 'nav.photos' },
   { id: 'timer', icon: <TimerIcon size={ICON_SIZE} strokeWidth={STROKE_WIDTH} />, labelKey: 'nav.timer' },
   { id: 'weather', icon: <CloudSun size={ICON_SIZE} strokeWidth={STROKE_WIDTH} />, labelKey: 'nav.weather' },
+  { id: 'alarm', icon: <ShieldCheck size={ICON_SIZE} strokeWidth={STROKE_WIDTH} />, labelKey: 'nav.alarm' },
 ];
+
+export const DEFAULT_NAV_ORDER: SidebarView[] = NAV_ITEMS.map((item) => item.id);
+
+/**
+ * Full tab order: the saved order (unknown ids dropped) followed by any
+ * view the saved order does not mention, so views added in a later
+ * release still show up for users with an older saved order.
+ */
+export function resolveNavOrder(order: SidebarView[] | undefined): SidebarView[] {
+  const known = new Set(DEFAULT_NAV_ORDER);
+  const seen = new Set<SidebarView>();
+  const result: SidebarView[] = [];
+  for (const id of order ?? []) {
+    if (known.has(id) && !seen.has(id)) {
+      seen.add(id);
+      result.push(id);
+    }
+  }
+  for (const id of DEFAULT_NAV_ORDER) {
+    if (!seen.has(id)) result.push(id);
+  }
+  return result;
+}
+
+/** Ordered nav items minus the hidden ones — what the sidebar and digit shortcuts use. */
+export function resolveVisibleNav(order: SidebarView[] | undefined, hidden: SidebarView[] | undefined): NavItem[] {
+  const hiddenSet = new Set(hidden ?? []);
+  const byId = new Map(NAV_ITEMS.map((item) => [item.id, item]));
+  return resolveNavOrder(order)
+    .filter((id) => !hiddenSet.has(id))
+    .map((id) => byId.get(id)!)
+    .filter(Boolean);
+}
 
 /** Items shown directly in the mobile bottom tab bar */
 const MOBILE_TAB_IDS: SidebarView[] = ['dashboard', 'calendar', 'chores', 'music'];
@@ -54,12 +94,15 @@ export function Sidebar({
   activeView,
   onChangeView,
   position = 'left',
+  navOrder,
+  hiddenViews,
 }: SidebarProps) {
   const { t } = useTranslation();
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
 
-  const mobileTabItems = NAV_ITEMS.filter((item) => MOBILE_TAB_IDS.includes(item.id));
-  const mobileOverflowItems = NAV_ITEMS.filter((item) => !MOBILE_TAB_IDS.includes(item.id));
+  const navItems = resolveVisibleNav(navOrder, hiddenViews);
+  const mobileTabItems = navItems.filter((item) => MOBILE_TAB_IDS.includes(item.id));
+  const mobileOverflowItems = navItems.filter((item) => !MOBILE_TAB_IDS.includes(item.id));
 
   const handleMobileNav = (view: SidebarView) => {
     onChangeView(view);
@@ -81,7 +124,7 @@ export function Sidebar({
 
         {/* Main nav icons */}
         <div className="sidebar-nav-group">
-          {NAV_ITEMS.map((item) => (
+          {navItems.map((item) => (
             <button
               key={item.id}
               type="button"

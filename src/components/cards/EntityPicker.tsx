@@ -103,14 +103,16 @@ interface EntityPickerProps {
   value: string;
   onChange: (entityId: string) => void;
   id?: string;
+  /** Domain filter preselected when the picker opens (e.g. 'media_player'). */
+  defaultDomain?: string;
 }
 
 /** Single-entity picker dropdown, like Lovelace's entity config field. */
-export function EntityPicker({ value, onChange, id }: EntityPickerProps) {
+export function EntityPicker({ value, onChange, id, defaultDomain = '' }: EntityPickerProps) {
   const options = useEntityOptions();
   const domains = useDomains(options);
   const [search, setSearch] = useState('');
-  const [domain, setDomain] = useState('');
+  const [domain, setDomain] = useState(defaultDomain);
 
   const visible = useMemo(() => {
     const filtered = filterEntityOptions(options, search, domain);
@@ -144,14 +146,16 @@ export function EntityPicker({ value, onChange, id }: EntityPickerProps) {
 interface EntityMultiPickerProps {
   selectedIds: string[];
   onToggle: (entityId: string) => void;
+  /** Domain filter preselected when the picker opens (e.g. 'media_player'). */
+  defaultDomain?: string;
 }
 
 /** Checkbox list for card fields that accept several entities. */
-export function EntityMultiPicker({ selectedIds, onToggle }: EntityMultiPickerProps) {
+export function EntityMultiPicker({ selectedIds, onToggle, defaultDomain = '' }: EntityMultiPickerProps) {
   const options = useEntityOptions();
   const domains = useDomains(options);
   const [search, setSearch] = useState('');
-  const [domain, setDomain] = useState('');
+  const [domain, setDomain] = useState(defaultDomain);
 
   const visible = useMemo(() => {
     const filtered = filterEntityOptions(options, search, domain);

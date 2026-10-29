@@ -55,7 +55,15 @@ function deduplicatePlayers(players: MediaPlayer[]): MediaPlayer[] {
   return Array.from(byName.values());
 }
 
-export async function getMediaPlayers(client?: HomeAssistantClient | null): Promise<MediaPlayer[]> {
+/**
+ * Fetch media players. With a non-empty `allowIds`, only those entities are
+ * returned, in allowlist order, and the name-based dedupe is skipped (the
+ * user picked exactly what they want).
+ */
+export async function getMediaPlayers(
+  client?: HomeAssistantClient | null,
+  allowIds: string[] = [],
+): Promise<MediaPlayer[]> {
   let all: MediaPlayer[] = [];
 
   if (client?.isConnected) {
@@ -77,6 +85,13 @@ export async function getMediaPlayers(client?: HomeAssistantClient | null): Prom
       console.warn('Failed to fetch media players via REST:', err);
       return [];
     }
+  }
+
+  if (allowIds.length > 0) {
+    const byId = new Map(all.map((p) => [p.entity_id, p]));
+    return allowIds
+      .map((id) => byId.get(id))
+      .filter((p): p is MediaPlayer => !!p && p.state !== 'unavailable');
   }
 
   return deduplicatePlayers(all);

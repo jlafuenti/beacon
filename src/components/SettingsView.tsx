@@ -13,7 +13,11 @@ import {
   Pencil,
   Trash2,
   ChevronLeft,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
+import { NAV_ITEMS as SIDEBAR_NAV_ITEMS, resolveNavOrder, type SidebarView } from './Sidebar';
+import { EntityPicker, EntityMultiPicker } from './cards/EntityPicker';
 import { AnyListClient } from '../api/anylist';
 import { GroceryList } from '../types/grocery';
 import { themes } from '../styles/themes';
@@ -426,12 +430,11 @@ export function SettingsView({
             onChange={(e) => onUpdateSettings({ defaultView: e.target.value as BeaconSettings['defaultView'] })}
             style={{ maxWidth: 180 }}
           >
-            <option value="dashboard">{t('nav.dashboard')}</option>
-            <option value="calendar">{t('nav.calendar')}</option>
-            <option value="grocery">{t('nav.grocery')}</option>
-            <option value="tasks">{t('nav.tasks')}</option>
-            <option value="music">{t('nav.music')}</option>
-            <option value="photos">{t('nav.photos')}</option>
+            {SIDEBAR_NAV_ITEMS
+              .filter((item) => item.id !== 'leaderboard' && !settings.hiddenViews.includes(item.id))
+              .map((item) => (
+                <option key={item.id} value={item.id}>{t(item.labelKey)}</option>
+              ))}
           </select>
         </div>
         <div className="settings-row">
@@ -492,6 +495,66 @@ export function SettingsView({
             />
           </div>
         )}
+      </div>
+
+      <h2 className="settings-section-title" style={{ marginTop: 32 }}>{t('settings.general.sidebarTabsTitle')}</h2>
+      <p className="settings-section-desc">{t('settings.general.sidebarTabsDesc')}</p>
+      <div className="settings-group">
+        {(() => {
+          const order = resolveNavOrder(settings.navOrder);
+          const byId = new Map(SIDEBAR_NAV_ITEMS.map((item) => [item.id, item]));
+          const move = (id: SidebarView, delta: number) => {
+            const from = order.indexOf(id);
+            const to = from + delta;
+            if (from < 0 || to < 0 || to >= order.length) return;
+            const next = [...order];
+            next.splice(from, 1);
+            next.splice(to, 0, id);
+            onUpdateSettings({ navOrder: next });
+          };
+          const setVisible = (id: SidebarView, visible: boolean) => {
+            const hidden = settings.hiddenViews.filter((v) => v !== id);
+            onUpdateSettings({ hiddenViews: visible ? hidden : [...hidden, id] });
+          };
+          return order.map((id, index) => {
+            const item = byId.get(id);
+            if (!item) return null;
+            const visible = !settings.hiddenViews.includes(id);
+            return (
+              <div key={id} className="settings-row settings-nav-row" style={{ opacity: visible ? 1 : 0.55 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+                  <span className="settings-nav-row-index">{visible ? index + 1 : ''}</span>
+                  <span className="settings-nav-row-icon">{item.icon}</span>
+                  <div>
+                    <div className="settings-row-label">{t(item.labelKey)}</div>
+                    {!visible && <div className="settings-row-sublabel">{t('settings.general.sidebarTabHidden')}</div>}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <button
+                    type="button"
+                    className="settings-btn settings-btn--icon"
+                    onClick={() => move(id, -1)}
+                    disabled={index === 0}
+                    aria-label={t('settings.general.moveUp', { name: t(item.labelKey) })}
+                  >
+                    <ChevronUp size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    className="settings-btn settings-btn--icon"
+                    onClick={() => move(id, 1)}
+                    disabled={index === order.length - 1}
+                    aria-label={t('settings.general.moveDown', { name: t(item.labelKey) })}
+                  >
+                    <ChevronDown size={16} />
+                  </button>
+                  <Toggle checked={visible} onChange={(v) => setVisible(id, v)} />
+                </div>
+              </div>
+            );
+          });
+        })()}
       </div>
 
       <h2 className="settings-section-title" style={{ marginTop: 32 }}>{t('settings.general.dashboardLayoutTitle')}</h2>
@@ -1304,6 +1367,20 @@ export function SettingsView({
             onChange={(v) => onUpdateSettings({ notificationMinutes: Number(v) as 5 | 10 | 15 | 30 })}
           />
         </div>
+        <div className="settings-row">
+          <div>
+            <div className="settings-row-label">{t('settings.calendar.railLabel')}</div>
+            <div className="settings-row-sublabel">{t('settings.calendar.railSublabel')}</div>
+          </div>
+          <Segment
+            value={settings.calendarSidebarMode}
+            options={[
+              { value: 'tasks', label: t('settings.calendar.railTasks') },
+              { value: 'shopping', label: t('settings.calendar.railShopping') },
+            ]}
+            onChange={(v) => onUpdateSettings({ calendarSidebarMode: v })}
+          />
+        </div>
       </div>
     </>
   );
@@ -1469,18 +1546,131 @@ export function SettingsView({
       </div>
 
       <div className="settings-group">
-        <div className="settings-group-title">{t('settings.integrations.musicAssistantTitle')}</div>
+        <div className="settings-group-title">{t('settings.integrations.taskListsTitle')}</div>
+        <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 12 }}>
+          <div>
+            <div className="settings-row-label">{t('settings.integrations.taskListsLabel')}</div>
+            <div className="settings-row-sublabel">{t('settings.integrations.taskListsSublabel')}</div>
+          </div>
+          {todoLists.length === 0 ? (
+            <div className="settings-row-sublabel">{t('settings.integrations.noTodoListsFound')}</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {todoLists.map(list => {
+                const isChecked = settings.taskListIds.includes(list.id);
+                return (
+                  <label
+                    key={list.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '8px 12px',
+                      borderRadius: 6,
+                      border: '1px solid var(--border)',
+                      background: isChecked ? 'var(--bg-today)' : 'var(--bg-surface)',
+                      cursor: 'pointer',
+                      transition: 'all 150ms ease',
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={(e) => {
+                        const newIds = e.target.checked
+                          ? [...settings.taskListIds, list.id]
+                          : settings.taskListIds.filter(id => id !== list.id);
+                        onUpdateSettings({ taskListIds: newIds });
+                      }}
+                      style={{ width: 16, height: 16 }}
+                    />
+                    <span style={{ flex: 1, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                      {list.name}
+                    </span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{list.id}</span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+        </div>
         <div className="settings-row">
+          <div>
+            <div className="settings-row-label">{t('settings.integrations.defaultTaskListLabel')}</div>
+            <div className="settings-row-sublabel">{t('settings.integrations.defaultTaskListSublabel')}</div>
+          </div>
+          <select
+            className="settings-input"
+            value={settings.defaultTaskList}
+            onChange={(e) => onUpdateSettings({ defaultTaskList: e.target.value })}
+          >
+            <option value="">{t('settings.integrations.autoFirstAvailable')}</option>
+            {todoLists
+              .filter(list => settings.taskListIds.length === 0 || settings.taskListIds.includes(list.id))
+              .map(list => (
+                <option key={list.id} value={list.id}>{list.name}</option>
+              ))}
+          </select>
+        </div>
+        <div className="settings-row">
+          <div>
+            <div className="settings-row-label">{t('settings.integrations.hideLocalListsLabel')}</div>
+            <div className="settings-row-sublabel">{t('settings.integrations.hideLocalListsSublabel')}</div>
+          </div>
+          <Toggle
+            checked={settings.hideLocalLists}
+            onChange={(v) => onUpdateSettings({ hideLocalLists: v })}
+          />
+        </div>
+      </div>
+
+      <div className="settings-group">
+        <div className="settings-group-title">{t('settings.integrations.musicAssistantTitle')}</div>
+        <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 12 }}>
+          <div>
+            <div className="settings-row-label">{t('settings.integrations.musicPlayersLabel')}</div>
+            <div className="settings-row-sublabel">{t('settings.integrations.musicPlayersSublabel')}</div>
+          </div>
+          <EntityMultiPicker
+            selectedIds={settings.musicPlayerIds}
+            defaultDomain="media_player"
+            onToggle={(entityId) => {
+              const next = settings.musicPlayerIds.includes(entityId)
+                ? settings.musicPlayerIds.filter((id) => id !== entityId)
+                : [...settings.musicPlayerIds, entityId];
+              onUpdateSettings({ musicPlayerIds: next });
+            }}
+          />
+          {settings.musicPlayerIds.length > 0 && (
+            <div className="settings-row-sublabel">
+              {t('settings.integrations.musicPlayersSelected', { count: settings.musicPlayerIds.length })}
+            </div>
+          )}
+        </div>
+        <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 12 }}>
           <div>
             <div className="settings-row-label">{t('settings.integrations.defaultPlayerLabel')}</div>
             <div className="settings-row-sublabel">{t('settings.integrations.defaultPlayerSublabel')}</div>
           </div>
-          <input
-            type="text"
-            className="settings-input"
+          <EntityPicker
             value={settings.musicDefaultPlayer}
-            onChange={(e) => onUpdateSettings({ musicDefaultPlayer: e.target.value })}
-            placeholder="media_player.living_room"
+            defaultDomain="media_player"
+            onChange={(entityId) => onUpdateSettings({ musicDefaultPlayer: entityId })}
+          />
+        </div>
+      </div>
+
+      <div className="settings-group">
+        <div className="settings-group-title">{t('settings.integrations.alarmTitle')}</div>
+        <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 12 }}>
+          <div>
+            <div className="settings-row-label">{t('settings.integrations.alarmEntityLabel')}</div>
+            <div className="settings-row-sublabel">{t('settings.integrations.alarmEntitySublabel')}</div>
+          </div>
+          <EntityPicker
+            value={settings.alarmEntity}
+            defaultDomain="alarm_control_panel"
+            onChange={(entityId) => onUpdateSettings({ alarmEntity: entityId })}
           />
         </div>
       </div>

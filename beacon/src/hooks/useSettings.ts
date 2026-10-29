@@ -1,19 +1,27 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { getConfig } from '../config';
 import { loadDataSync, loadServerData, saveData } from '../api/beacon-store';
+import type { SidebarView } from '../components/Sidebar';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
+/** Views that can be the startup screen (everything in the sidebar except Settings and the Leaderboard overlay). */
+export type DefaultView = Exclude<SidebarView, 'settings' | 'leaderboard'>;
+
 export interface BeaconSettings {
   // General
   familyName: string;
   saveConfigInBrowser: boolean;
-  defaultView: 'dashboard' | 'calendar' | 'grocery' | 'tasks' | 'music' | 'photos';
+  defaultView: DefaultView;
   timeFormat: '12h' | '24h';
   weekStartsOn: 0 | 1; // 0 = Sunday, 1 = Monday
   locale: string;
+  /** Sidebar tab order. Views missing from the list are appended in default order. */
+  navOrder: SidebarView[];
+  /** Sidebar tabs removed from the nav (and from the digit shortcuts). */
+  hiddenViews: SidebarView[];
 
   // Appearance
   themeId: string;
@@ -29,6 +37,8 @@ export interface BeaconSettings {
   calendarColors: Record<string, string>;
   defaultEventDuration: 30 | 60 | 120;
   notificationMinutes: 5 | 10 | 15 | 30;
+  /** What the week view's right-hand rail shows under Today. */
+  calendarSidebarMode: 'tasks' | 'shopping';
 
   // Integrations
   weatherEntity: string;
@@ -36,8 +46,17 @@ export interface BeaconSettings {
   anylistEnabled: boolean;
   defaultGroceryList: string;
   groceryListIds: string[];
+  /** HA todo entities shown on the Tasks tab (empty = every non-grocery list). */
+  taskListIds: string[];
+  defaultTaskList: string;
+  /** Hide Beacon's built-in local To-Do and Shopping lists. */
+  hideLocalLists: boolean;
   shoppingEntity: string;
   musicDefaultPlayer: string;
+  /** media_player entities offered in the Music view (empty = every player). */
+  musicPlayerIds: string[];
+  /** alarm_control_panel entity driven by the Alarm view. */
+  alarmEntity: string;
   photoDirectory: string;
   photoInterval: number;
   photoTransition: 'fade' | 'slide';
@@ -78,6 +97,8 @@ function buildDefaults(): BeaconSettings {
     timeFormat: '12h',
     weekStartsOn: 0,
     locale: 'en-US',
+    navOrder: [],
+    hiddenViews: [],
 
     themeId: config.theme,
     autoDarkMode: config.auto_dark_mode,
@@ -91,14 +112,20 @@ function buildDefaults(): BeaconSettings {
     calendarColors: {},
     defaultEventDuration: 60,
     notificationMinutes: 10,
+    calendarSidebarMode: 'shopping',
 
     weatherEntity: config.weather_entity,
     grocyEnabled: false,
     anylistEnabled: false,
     defaultGroceryList: '',
     groceryListIds: [],
+    taskListIds: [],
+    defaultTaskList: '',
+    hideLocalLists: false,
     shoppingEntity: '',
     musicDefaultPlayer: '',
+    musicPlayerIds: [],
+    alarmEntity: '',
     photoDirectory: config.photo_directory,
     photoInterval: config.photo_interval,
     photoTransition: 'fade',
@@ -239,6 +266,8 @@ export function useSettings() {
   return {
     settings,
     defaults,
+    /** True once the server-side (or browser) copy has been merged in. */
+    loaded,
     updateSettings,
     resetSettings,
     exportSettings,

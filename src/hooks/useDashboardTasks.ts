@@ -11,33 +11,50 @@ export interface DashboardTodoItem {
   userId?: string;
 }
 
-export function useDashboardTasks(connected: boolean, groceryListIds: string[] = []) {
+export function useDashboardTasks(
+  connected: boolean,
+  groceryListIds: string[] = [],
+  taskListIds: string[] = [],
+  includeLocal = true,
+) {
   const localTasks = useLocalTasks();
   const { users, listByUser, completions } = useTaskmate(connected);
   const [haItems, setHaItems] = useState<Omit<DashboardTodoItem, 'userId'>[]>([]);
 
+  // Stable keys so a fresh array with the same ids does not restart the poll
+  const groceryKey = groceryListIds.join(',');
+  const taskKey = taskListIds.join(',');
+
   // Fetch HA todo items for task-type lists
   useEffect(() => {
     if (!connected && !hasToken()) return;
+    const groceryIds = groceryKey ? groceryKey.split(',') : [];
+    const taskIds = taskKey ? taskKey.split(',') : [];
 
     async function fetchTasks() {
       try {
         // Get the non-grocery HA todo entities
         const states = await haFetch('/api/states') as Array<{ entity_id: string; state: string; attributes: Record<string, unknown> }>;
 
-        const todoEntities = states.filter(s => {
-          if (!s.entity_id.startsWith('todo.') || s.state === 'unavailable') return false;
-          const name = s.attributes.friendly_name as string || s.entity_id;
-          // Use groceryListIds if configured, otherwise fall back to keyword classification
-          if (groceryListIds.length > 0) {
-            return !groceryListIds.includes(s.entity_id);
-          }
-          return !isGroceryEntity(name);
-        });
+        const available = states.filter(s => s.entity_id.startsWith('todo.') && s.state !== 'unavailable');
 
-        // Fetch items from up to 3 task lists
+        // Allowlist wins when configured (same lists as the Tasks tab, same order)
+        const todoEntities = taskIds.length > 0
+          ? taskIds
+              .map(id => available.find(s => s.entity_id === id))
+              .filter((s): s is typeof available[number] => !!s)
+          : available.filter(s => {
+              const name = s.attributes.friendly_name as string || s.entity_id;
+              // Use groceryListIds if configured, otherwise fall back to keyword classification
+              if (groceryIds.length > 0) {
+                return !groceryIds.includes(s.entity_id);
+              }
+              return !isGroceryEntity(name);
+            }).slice(0, 3);
+
+        // Fetch items from the chosen task lists
         const items: Omit<DashboardTodoItem, 'userId'>[] = [];
-        for (const entity of todoEntities.slice(0, 3)) {
+        for (const entity of todoEntities) {
           try {
             const result = await callHaService('todo', 'get_items', {
               entity_id: entity.entity_id,
@@ -64,10 +81,10 @@ export function useDashboardTasks(connected: boolean, groceryListIds: string[] =
     fetchTasks();
     const interval = setInterval(fetchTasks, 60_000);
     return () => clearInterval(interval);
-  }, [connected, groceryListIds]);
+  }, [connected, groceryKey, taskKey]);
 
   const items: DashboardTodoItem[] = useMemo(() => {
-    const local: DashboardTodoItem[] = localTasks
+    const local: DashboardTodoItem[] = !includeLocal ? [] : localTasks
       .getTasksForList('beacon-todo')
       .filter(t => t.status === 'needs_action' || (t.completedAt ? isToday(t.completedAt) : false))
       .map(t => ({
@@ -100,7 +117,7 @@ export function useDashboardTasks(connected: boolean, groceryListIds: string[] =
       seen.add(key);
       return true;
     });
-  }, [localTasks, haItems, listByUser, completions]);
+  }, [localTasks, haItems, listByUser, completions, includeLocal]);
 
   const toggleItem = useCallback(async (uid: string, currentStatus: string, listId?: string) => {
     // Check if it's a local item

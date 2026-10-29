@@ -1,3 +1,21 @@
+# [1.40.0-lafuenti.1](https://github.com/jlafuenti/beacon/tree/lafuenti) (2026-10-29)
+
+Lafuenti fork of Beacon 1.40.0 for the kitchen family display. Upstream is
+[asachs01/beacon](https://github.com/asachs01/beacon); nothing here is sent upstream.
+
+### Features
+
+* **sidebar:** reorderable tabs with show/hide (Settings > General > Sidebar Tabs); digit shortcuts follow the order
+* **calendar:** week view rail can show the Shopping card's HA list (check-off + quick add) instead of Tasks
+* **lists:** Tasks tab allowlist and default list, Shopping tab honours the grocery allowlist, toggle to hide Beacon's built-in lists; dashboard tasks use the same allowlist
+* **music:** media player allowlist with an entity picker; Default Player is now applied
+* **weather:** panel layout for 1920x1080 — next 24 hours always visible, 7-day grid with highs, lows and precipitation chance, details tiles with sunrise/sunset from sun.sun
+* **alarm:** new Alarm tab — state banner, keypad, Arm Away / Home / Night and Disarm for an alarm_control_panel entity
+
+### Bug Fixes
+
+* **app:** the saved Default View is applied once settings load instead of being read before they arrive
+
 # [1.40.0](https://github.com/asachs01/beacon/compare/v1.39.6...v1.40.0) (2026-10-17)
 
 

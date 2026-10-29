@@ -575,6 +575,54 @@ a:focus:not(:focus-visible) {
   text-overflow: ellipsis;
 }
 
+/* Shopping rail (Settings → Calendar → Week view rail = Shopping) */
+.cal-sidebar-section--grow {
+  flex: 1;
+  min-height: 0;
+}
+
+.cal-sidebar-todos--scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  gap: 10px;
+}
+
+.cal-sidebar-add {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.cal-sidebar-add-input {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.cal-sidebar-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+
+.cal-sidebar-add-btn:disabled {
+  background: var(--border);
+  cursor: not-allowed;
+}
+
 /* --- Week Calendar --- */
 .week-calendar {
   flex: 1;

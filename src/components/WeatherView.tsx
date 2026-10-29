@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
-import { format, parseISO, isSameDay } from 'date-fns';
-import { RefreshCw, ChevronDown, Droplets, Wind } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { format, parseISO, isSameDay, isToday } from 'date-fns';
+import { RefreshCw, Droplets, Wind, Thermometer, Gauge, Sunrise, Sunset, ArrowUp, ArrowDown } from 'lucide-react';
 import { weatherIcon, conditionLabel } from '../types/weather-icons';
 import { haFetch, callHaService, hasToken } from '../api/ha-rest';
 import { getConfig } from '../config';
@@ -14,6 +14,7 @@ interface ForecastItem {
   humidity?: number;
   wind_speed?: number;
   precipitation_probability?: number;
+  precipitation?: number;
 }
 
 interface HourlyItem {
@@ -32,16 +33,38 @@ interface CurrentWeather {
   temperatureUnit: string;
   humidity?: number;
   windSpeed?: number;
+  windSpeedUnit: string;
   windBearing?: number;
   pressure?: number;
+  pressureUnit: string;
   feelsLike?: number;
 }
 
+interface SunTimes {
+  rising: string;
+  setting: string;
+}
+
+/** Hours of hourly forecast shown in the always-visible "today" strip. */
+const TODAY_HOURS = 24;
+
+function compassPoint(bearing: number): string {
+  const points = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+  return points[Math.round(((bearing % 360) + 360) % 360 / 45) % 8];
+}
+
+function formatPressure(value: number, unit: string): string {
+  // inHg reads as 30.28; hPa/mbar as whole numbers
+  const decimals = /inhg/i.test(unit) ? 2 : 0;
+  return `${value.toFixed(decimals)} ${unit}`;
+}
+
 export function WeatherView() {
-  const { t } = useTranslation();
+  const { t, dateLocale } = useTranslation();
   const [current, setCurrent] = useState<CurrentWeather | null>(null);
   const [forecast, setForecast] = useState<ForecastItem[]>([]);
   const [hourly, setHourly] = useState<HourlyItem[]>([]);
+  const [sun, setSun] = useState<SunTimes | null>(null);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [hourlyLoading, setHourlyLoading] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -62,6 +85,17 @@ export function WeatherView() {
       setHourly([]);
     } finally {
       setHourlyLoading(false);
+    }
+  }, []);
+
+  const fetchSun = useCallback(async () => {
+    try {
+      const entity = await haFetch('/api/states/sun.sun') as { attributes: Record<string, unknown> } | null;
+      const rising = entity?.attributes.next_rising as string | undefined;
+      const setting = entity?.attributes.next_setting as string | undefined;
+      setSun(rising && setting ? { rising, setting } : null);
+    } catch {
+      setSun(null);
     }
   }, []);
 
@@ -113,8 +147,10 @@ export function WeatherView() {
         temperatureUnit: (attrs.temperature_unit as string) ?? '°F',
         humidity: attrs.humidity as number | undefined,
         windSpeed: attrs.wind_speed as number | undefined,
-        windBearing: attrs.wind_bearing as number | undefined,
+        windSpeedUnit: (attrs.wind_speed_unit as string) ?? 'mph',
+        windBearing: typeof attrs.wind_bearing === 'number' ? attrs.wind_bearing : undefined,
         pressure: attrs.pressure as number | undefined,
+        pressureUnit: (attrs.pressure_unit as string) ?? 'hPa',
         feelsLike: attrs.apparent_temperature as number | undefined,
       });
 
@@ -133,14 +169,14 @@ export function WeatherView() {
         setForecast([]);
       }
 
-      // Fetch hourly forecast
-      await fetchHourly(entityId);
+      // Hourly forecast + sunrise/sunset (one cheap state read)
+      await Promise.all([fetchHourly(entityId), fetchSun()]);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('weatherView.fetchFailed'));
     } finally {
       setLoading(false);
     }
-  }, [fetchHourly]);
+  }, [fetchHourly, fetchSun, t]);
 
   useEffect(() => {
     fetchData();
@@ -152,9 +188,17 @@ export function WeatherView() {
     setSelectedDay(prev => prev === datetime ? null : datetime);
   };
 
+  // Always-visible strip: the next 24 hours from now
+  const upcomingHours = useMemo(() => {
+    const now = Date.now() - 60 * 60 * 1000; // keep the hour we are in
+    return hourly.filter(h => parseISO(h.datetime).getTime() >= now).slice(0, TODAY_HOURS);
+  }, [hourly]);
+
   const hoursForSelectedDay = selectedDay
     ? hourly.filter(h => isSameDay(parseISO(h.datetime), parseISO(selectedDay)))
     : [];
+
+  const todayForecast = forecast.find(d => isToday(parseISO(d.datetime))) ?? forecast[0];
 
   if (loading && !current) {
     return (
@@ -180,11 +224,31 @@ export function WeatherView() {
   if (!current) return null;
 
   const unit = current.temperatureUnit.replace('°', '');
+  const timeFmt = 'h:mm a';
+
+  const details: Array<{ key: string; icon: React.ReactNode; label: string; value: string }> = [];
+  if (current.feelsLike != null) {
+    details.push({ key: 'feels', icon: <Thermometer size={22} strokeWidth={1.5} />, label: t('weatherView.feelsLike'), value: `${Math.round(current.feelsLike)}°${unit}` });
+  }
+  if (current.humidity != null) {
+    details.push({ key: 'humidity', icon: <Droplets size={22} strokeWidth={1.5} />, label: t('weatherView.humidity'), value: `${Math.round(current.humidity)}%` });
+  }
+  if (current.windSpeed != null) {
+    const dir = current.windBearing != null ? ` ${compassPoint(current.windBearing)}` : '';
+    details.push({ key: 'wind', icon: <Wind size={22} strokeWidth={1.5} />, label: t('weatherView.wind'), value: `${Math.round(current.windSpeed)} ${current.windSpeedUnit}${dir}` });
+  }
+  if (current.pressure != null) {
+    details.push({ key: 'pressure', icon: <Gauge size={22} strokeWidth={1.5} />, label: t('weatherView.pressure'), value: formatPressure(current.pressure, current.pressureUnit) });
+  }
+  if (sun) {
+    details.push({ key: 'sunrise', icon: <Sunrise size={22} strokeWidth={1.5} />, label: t('weatherView.sunrise'), value: format(parseISO(sun.rising), timeFmt, { locale: dateLocale }) });
+    details.push({ key: 'sunset', icon: <Sunset size={22} strokeWidth={1.5} />, label: t('weatherView.sunset'), value: format(parseISO(sun.setting), timeFmt, { locale: dateLocale }) });
+  }
 
   return (
-    <div className="weather-view">
-      {/* Current conditions */}
-      <section className="weather-current">
+    <div className="weather-view weather-view--panel">
+      {/* Current conditions + details */}
+      <section className="weather-current weather-current--panel">
         <div className="weather-current-main">
           <span className="weather-current-icon">
             {weatherIcon(current.state)}
@@ -196,35 +260,33 @@ export function WeatherView() {
             <span className="weather-current-condition">
               {conditionLabel(current.state, t)}
             </span>
+            {todayForecast && (
+              <span className="weather-current-range">
+                <ArrowUp size={16} strokeWidth={2} /> {Math.round(todayForecast.temperature)}°
+                <span className="weather-current-range-sep" />
+                <ArrowDown size={16} strokeWidth={2} /> {Math.round(todayForecast.templow)}°
+                {todayForecast.precipitation_probability != null && (
+                  <>
+                    <span className="weather-current-range-sep" />
+                    <Droplets size={16} strokeWidth={2} /> {todayForecast.precipitation_probability}%
+                  </>
+                )}
+              </span>
+            )}
           </div>
         </div>
 
-        <div className="weather-current-details">
-          {current.feelsLike != null && (
-            <div className="weather-detail">
-              <span className="weather-detail-label">{t('weatherView.feelsLike')}</span>
-              <span className="weather-detail-value">{Math.round(current.feelsLike)}°{unit}</span>
-            </div>
-          )}
-          {current.humidity != null && (
-            <div className="weather-detail">
-              <span className="weather-detail-label">{t('weatherView.humidity')}</span>
-              <span className="weather-detail-value">{current.humidity}%</span>
-            </div>
-          )}
-          {current.windSpeed != null && (
-            <div className="weather-detail">
-              <span className="weather-detail-label">{t('weatherView.wind')}</span>
-              <span className="weather-detail-value">{Math.round(current.windSpeed)} mph</span>
-            </div>
-          )}
-          {current.pressure != null && (
-            <div className="weather-detail">
-              <span className="weather-detail-label">{t('weatherView.pressure')}</span>
-              <span className="weather-detail-value">{Math.round(current.pressure)} hPa</span>
-            </div>
-          )}
-        </div>
+        {details.length > 0 && (
+          <div className="weather-details-grid">
+            {details.map((d) => (
+              <div key={d.key} className="weather-detail weather-detail--tile">
+                <span className="weather-detail-icon">{d.icon}</span>
+                <span className="weather-detail-label">{d.label}</span>
+                <span className="weather-detail-value">{d.value}</span>
+              </div>
+            ))}
+          </div>
+        )}
 
         <button
           type="button"
@@ -237,21 +299,48 @@ export function WeatherView() {
         </button>
       </section>
 
+      {/* Next 24 hours — always visible */}
+      <section className="weather-forecast">
+        <h2 className="weather-forecast-title">{t('weatherView.next24Hours')}</h2>
+        {hourlyLoading && upcomingHours.length === 0 ? (
+          <div className="weather-hourly-loading">{t('weatherView.loadingHourly')}</div>
+        ) : upcomingHours.length === 0 ? (
+          <div className="weather-hourly-empty">{t('weatherView.noHourlyData')}</div>
+        ) : (
+          <div className="weather-hourly-scroll weather-hourly-scroll--today">
+            {upcomingHours.map((hour, i) => {
+              const time = parseISO(hour.datetime);
+              return (
+                <div key={hour.datetime} className="weather-hourly-card weather-hourly-card--lg">
+                  <span className="weather-hourly-time">{i === 0 ? t('weatherView.now') : format(time, 'h a', { locale: dateLocale })}</span>
+                  <span className="weather-hourly-icon">{weatherIcon(hour.condition)}</span>
+                  <span className="weather-hourly-temp">{Math.round(hour.temperature)}°</span>
+                  <span className={`weather-hourly-precip${(hour.precipitation_probability ?? 0) === 0 ? ' weather-hourly-precip--none' : ''}`}>
+                    <Droplets size={13} /> {hour.precipitation_probability ?? 0}%
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
       {/* 7-day forecast */}
       {forecast.length > 0 && (
         <section className="weather-forecast">
           <h2 className="weather-forecast-title">{t('weatherView.sevenDayForecast')}</h2>
-          <div className="weather-forecast-scroll">
+          <div className="weather-forecast-grid">
             {forecast.map((day) => {
               const date = parseISO(day.datetime);
-              const dayName = format(date, 'EEE');
-              const dateLabel = format(date, 'MMM d');
+              const today = isToday(date);
+              const dayName = today ? t('common.today') : format(date, 'EEEE', { locale: dateLocale });
+              const dateLabel = format(date, 'MMM d', { locale: dateLocale });
               const isSelected = selectedDay === day.datetime;
               return (
                 <button
                   key={day.datetime}
                   type="button"
-                  className={`weather-forecast-card${isSelected ? ' weather-forecast-card--selected' : ''}`}
+                  className={`weather-forecast-card weather-forecast-card--lg${isSelected ? ' weather-forecast-card--selected' : ''}${today ? ' weather-forecast-card--today' : ''}`}
                   onClick={() => handleDayClick(day.datetime)}
                   aria-expanded={isSelected}
                 >
@@ -260,30 +349,25 @@ export function WeatherView() {
                   <span className="weather-forecast-icon">
                     {weatherIcon(day.condition)}
                   </span>
+                  <span className="weather-forecast-cond">{conditionLabel(day.condition, t)}</span>
                   <div className="weather-forecast-temps">
                     <span className="weather-forecast-high">{Math.round(day.temperature)}°</span>
                     <span className="weather-forecast-low">{Math.round(day.templow)}°</span>
                   </div>
-                  {day.precipitation_probability != null && (
-                    <span className="weather-forecast-precip">
-                      {day.precipitation_probability}%
-                    </span>
-                  )}
-                  <ChevronDown
-                    size={14}
-                    className={`weather-forecast-chevron${isSelected ? ' weather-forecast-chevron--open' : ''}`}
-                  />
+                  <span className={`weather-forecast-precip${(day.precipitation_probability ?? 0) === 0 ? ' weather-forecast-precip--none' : ''}`}>
+                    <Droplets size={14} /> {day.precipitation_probability ?? 0}%
+                  </span>
                 </button>
               );
             })}
           </div>
 
-          {/* Hourly detail for selected day */}
+          {/* Hourly detail for a tapped day */}
           {selectedDay && (
             <div className="weather-hourly">
               <div className="weather-hourly-header">
                 <h3 className="weather-hourly-title">
-                  {t('weatherView.hourlyForDay', { day: format(parseISO(selectedDay), 'EEEE, MMM d') })}
+                  {t('weatherView.hourlyForDay', { day: format(parseISO(selectedDay), 'EEEE, MMM d', { locale: dateLocale }) })}
                 </h3>
                 <button
                   type="button"
@@ -304,7 +388,7 @@ export function WeatherView() {
                     const time = parseISO(hour.datetime);
                     return (
                       <div key={hour.datetime} className="weather-hourly-card">
-                        <span className="weather-hourly-time">{format(time, 'h a')}</span>
+                        <span className="weather-hourly-time">{format(time, 'h a', { locale: dateLocale })}</span>
                         <span className="weather-hourly-icon">{weatherIcon(hour.condition)}</span>
                         <span className="weather-hourly-temp">{Math.round(hour.temperature)}°</span>
                         {hour.precipitation_probability != null && (

@@ -23,28 +23,51 @@ interface UseMusicReturn {
   selectPlayer: (entityId: string) => void;
 }
 
+export interface UseMusicOptions {
+  /** media_player entities to offer (Settings → Integrations → Music). Empty = every player. */
+  playerIds?: string[];
+  /** Player selected before the user picks one (Settings → Integrations → Default Player). */
+  defaultPlayer?: string;
+}
+
 export function useMusic(
   getClient: () => HomeAssistantClient | null,
   connected: boolean,
+  options: UseMusicOptions = {},
 ): UseMusicReturn {
   const [players, setPlayers] = useState<MediaPlayer[]>([]);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const subscriptionRef = useRef<number | null>(null);
+  const userPickedRef = useRef(false);
+
+  // Stable key so a fresh array with the same ids does not resubscribe
+  const allowKey = (options.playerIds ?? []).join(',');
+  const defaultPlayer = options.defaultPlayer ?? '';
 
   const activePlayer =
     players.find((p) => p.state === 'playing') ||
     players.find((p) => p.entity_id === selectedPlayerId) ||
     null;
 
+  // Apply the default player once players are known, until the user picks one.
+  useEffect(() => {
+    if (userPickedRef.current || !defaultPlayer) return;
+    if (players.some((p) => p.entity_id === defaultPlayer)) {
+      setSelectedPlayerId(defaultPlayer);
+    }
+  }, [players, defaultPlayer]);
+
   // Fetch players and subscribe to state changes (or poll in REST mode)
   useEffect(() => {
     if (!connected) return;
     const client = getClient();
+    const allowIds = allowKey ? allowKey.split(',') : [];
+    const allowSet = new Set(allowIds);
     let cancelled = false;
 
     async function init() {
       // Initial fetch — works via WS or REST
-      const initialPlayers = await getMediaPlayers(client);
+      const initialPlayers = await getMediaPlayers(client, allowIds);
       if (!cancelled) {
         setPlayers(initialPlayers);
       }
@@ -63,6 +86,7 @@ export function useMusic(
           };
           const newState = data.data?.new_state;
           if (!newState || !newState.entity_id.startsWith('media_player.')) return;
+          if (allowSet.size > 0 && !allowSet.has(newState.entity_id)) return;
 
           const parsed = parseMediaPlayer(newState);
           setPlayers((prev) => {
@@ -90,7 +114,7 @@ export function useMusic(
       pollInterval = setInterval(async () => {
         if (document.hidden || cancelled) return;
         try {
-          const updated = await getMediaPlayers(null);
+          const updated = await getMediaPlayers(null, allowIds);
           if (!cancelled) setPlayers(updated);
         } catch { /* ignore poll errors */ }
       }, 10_000);
@@ -104,7 +128,7 @@ export function useMusic(
       }
       if (pollInterval) clearInterval(pollInterval);
     };
-  }, [connected, getClient]);
+  }, [connected, getClient, allowKey]);
 
   const resolveEntityId = useCallback(
     (entityId?: string) => entityId || activePlayer?.entity_id || selectedPlayerId,
@@ -162,6 +186,7 @@ export function useMusic(
   );
 
   const selectPlayer = useCallback((entityId: string) => {
+    userPickedRef.current = true;
     setSelectedPlayerId(entityId);
   }, []);
 

@@ -522,6 +522,28 @@
   color: white;
 }
 
+/* Icon-only button (sidebar tab reorder arrows) */
+.settings-btn--icon {
+  padding: 6px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Sidebar tab rows (Settings → General → Sidebar Tabs) */
+.settings-nav-row-index {
+  width: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+.settings-nav-row-icon {
+  display: inline-flex;
+  color: var(--text-secondary);
+}
+
 .settings-btn--primary:hover {
   opacity: 0.9;
 }

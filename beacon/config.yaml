@@ -1,8 +1,8 @@
-name: Beacon
-version: "1.40.0"
+name: Beacon (Lafuenti)
+version: "1.40.0-lafuenti.1"
 slug: beacon
 description: "Family command center for wall-mounted displays"
-url: "https://github.com/asachs01/beacon"
+url: "https://github.com/jlafuenti/beacon"
 arch:
   - amd64
   - aarch64
@@ -13,7 +13,7 @@ boot: auto
 ingress: true
 ingress_port: 3000
 panel_icon: mdi:calendar-clock
-panel_title: Beacon
+panel_title: Beacon (Lafuenti)
 homeassistant_api: true
 auth_api: true
 options:

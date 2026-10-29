@@ -1,0 +1,247 @@
+/* ============================================================
+   Beacon — Alarm View (Lafuenti fork)
+   Keypad + arm/disarm for an alarm_control_panel entity.
+   ============================================================ */
+
+.alarm-view {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  height: 100%;
+  padding: 36px 48px;
+  overflow-y: auto;
+}
+
+.alarm-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  height: 100%;
+  color: var(--text-muted);
+  font-size: 18px;
+  text-align: center;
+}
+
+/* --- State banner --- */
+.alarm-banner {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 28px 36px;
+  border-radius: 20px;
+  background: var(--bg-secondary);
+  border: 2px solid transparent;
+  color: var(--text-primary);
+  transition: background 0.3s, border-color 0.3s;
+}
+
+.alarm-banner-icon { flex-shrink: 0; }
+
+.alarm-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.alarm-banner-name {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.alarm-banner-state {
+  font-family: var(--font-display);
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+}
+
+.alarm-banner-sub {
+  font-size: 16px;
+  opacity: 0.85;
+}
+
+.alarm-banner--off {
+  border-color: color-mix(in srgb, var(--color-success) 55%, transparent);
+  background: color-mix(in srgb, var(--color-success) 14%, var(--bg-secondary));
+}
+
+.alarm-banner--armed {
+  border-color: color-mix(in srgb, var(--color-accent) 60%, transparent);
+  background: color-mix(in srgb, var(--color-accent) 16%, var(--bg-secondary));
+}
+
+.alarm-banner--transition {
+  border-color: color-mix(in srgb, var(--color-warning) 65%, transparent);
+  background: color-mix(in srgb, var(--color-warning) 18%, var(--bg-secondary));
+  animation: alarm-pulse 1.4s ease-in-out infinite;
+}
+
+.alarm-banner--alert {
+  border-color: var(--color-error);
+  background: color-mix(in srgb, var(--color-error) 28%, var(--bg-secondary));
+  animation: alarm-pulse 0.7s ease-in-out infinite;
+}
+
+.alarm-banner--dead {
+  opacity: 0.6;
+}
+
+@keyframes alarm-pulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.18); }
+}
+
+/* --- Body: keypad left, actions right --- */
+.alarm-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.8fr);
+  gap: 28px;
+  flex: 1;
+  min-height: 0;
+}
+
+.alarm-keypad-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px;
+  border-radius: 20px;
+  background: var(--bg-secondary);
+}
+
+.alarm-keypad-panel--shake {
+  animation: alarm-shake 0.45s ease;
+}
+
+@keyframes alarm-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-10px); }
+  40% { transform: translateX(10px); }
+  60% { transform: translateX(-6px); }
+  80% { transform: translateX(6px); }
+}
+
+.alarm-code {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 44px;
+}
+
+.alarm-code-hint {
+  font-size: 16px;
+  color: var(--text-muted);
+}
+
+.alarm-code-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--text-primary);
+}
+
+.alarm-notice {
+  min-height: 22px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.alarm-notice--error { color: var(--color-error); }
+.alarm-notice--info { color: var(--text-secondary); }
+
+.alarm-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  width: min(100%, 420px);
+}
+
+.alarm-key {
+  height: 92px;
+  border: none;
+  border-radius: 16px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s, transform 0.08s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.alarm-key:active { transform: scale(0.96); background: var(--bg-tertiary, rgba(255, 255, 255, 0.08)); }
+.alarm-key:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.alarm-key--soft {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* --- Arm / disarm buttons --- */
+.alarm-actions {
+  display: grid;
+  grid-template-rows: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.alarm-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  border: 2px solid transparent;
+  border-radius: 18px;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.12s, transform 0.08s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.alarm-action:active { transform: scale(0.98); }
+.alarm-action:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.alarm-action--arm {
+  background: color-mix(in srgb, var(--color-accent) 20%, var(--bg-secondary));
+  border-color: color-mix(in srgb, var(--color-accent) 50%, transparent);
+  color: var(--text-primary);
+}
+
+.alarm-action--disarm {
+  background: var(--color-success);
+  color: #fff;
+}
+
+.alarm-action--busy { filter: brightness(1.1); }
+
+.alarm-spin { animation: alarm-spin 0.9s linear infinite; }
+
+@keyframes alarm-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* --- Responsive --- */
+@media (max-width: 900px) {
+  .alarm-view { padding: 20px 16px; gap: 20px; }
+  .alarm-banner { padding: 20px; gap: 16px; }
+  .alarm-banner-state { font-size: 30px; }
+  .alarm-body { grid-template-columns: 1fr; }
+  .alarm-actions { grid-template-rows: none; grid-template-columns: repeat(2, 1fr); }
+  .alarm-action { min-height: 72px; font-size: 18px; }
+  .alarm-key { height: 68px; font-size: 26px; }
+}

@@ -356,6 +356,151 @@
   font-weight: 500;
 }
 
+/* --- Large-panel layout (Lafuenti fork: 21.5" 1920x1080 kitchen display) --- */
+.weather-view--panel {
+  gap: 28px;
+  padding: 32px 40px;
+}
+
+.weather-current--panel {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  flex-wrap: wrap;
+  padding: 28px 36px;
+}
+
+.weather-current--panel .weather-current-icon {
+  font-size: 104px;
+}
+
+.weather-current--panel .weather-current-temp {
+  font-size: 88px;
+}
+
+.weather-current--panel .weather-current-condition {
+  font-size: 24px;
+}
+
+.weather-current-range {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.weather-current-range-sep {
+  width: 1px;
+  height: 16px;
+  margin: 0 8px;
+  background: var(--border);
+}
+
+.weather-details-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(130px, 1fr));
+  gap: 12px 20px;
+}
+
+.weather-detail--tile {
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--bg-primary, rgba(0, 0, 0, 0.15));
+  gap: 2px;
+}
+
+.weather-detail-icon {
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.weather-detail--tile .weather-detail-value {
+  font-size: 22px;
+}
+
+.weather-hourly-scroll--today {
+  gap: 12px;
+}
+
+.weather-hourly-card--lg {
+  width: 96px;
+  padding: 16px 8px;
+  gap: 8px;
+  background: var(--bg-secondary);
+}
+
+.weather-hourly-card--lg .weather-hourly-time { font-size: 14px; }
+.weather-hourly-card--lg .weather-hourly-icon { font-size: 32px; }
+.weather-hourly-card--lg .weather-hourly-temp { font-size: 22px; }
+.weather-hourly-card--lg .weather-hourly-precip { font-size: 13px; }
+
+.weather-hourly-precip--none,
+.weather-forecast-precip--none {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.weather-forecast-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.weather-forecast-card--lg {
+  width: auto;
+  padding: 20px 12px;
+  gap: 10px;
+}
+
+.weather-forecast-card--today {
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.weather-forecast-card--lg .weather-forecast-day { font-size: 18px; }
+.weather-forecast-card--lg .weather-forecast-date { font-size: 14px; }
+.weather-forecast-card--lg .weather-forecast-icon { font-size: 52px; }
+
+.weather-forecast-cond {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+  min-height: 1.3em;
+}
+
+.weather-forecast-card--lg .weather-forecast-high { font-size: 24px; }
+.weather-forecast-card--lg .weather-forecast-low { font-size: 18px; }
+
+.weather-forecast-card--lg .weather-forecast-precip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+}
+
+@media (max-width: 1100px) {
+  .weather-forecast-grid {
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+
+  .weather-forecast-card--lg {
+    flex: 0 0 auto;
+    width: 130px;
+  }
+
+  .weather-details-grid {
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+  }
+
+  .weather-current--panel .weather-current-temp { font-size: 64px; }
+  .weather-current--panel .weather-current-icon { font-size: 80px; }
+}
+
 /* --- Dashboard weather widget clickable --- */
 .dashboard-weather--clickable {
   cursor: pointer;
