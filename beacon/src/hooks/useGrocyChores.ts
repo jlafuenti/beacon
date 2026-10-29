@@ -202,7 +202,10 @@ export function useGrocyChores(members: FamilyMember[], options: UseGrocyChoresO
     } catch (err) {
       console.warn('useGrocyChores: failed to fire done event', err);
     }
-    setTimeout(refresh, 2_500);
+    // The HA automation takes a few seconds (Grocy execute + list cleanup);
+    // refresh once it has had time to finish, then once more to be sure.
+    setTimeout(refresh, 6_000);
+    setTimeout(refresh, 15_000);
   }, [options.listsByMember, refresh]);
 
   return { byMember, loading, error, refresh, completeChore };

@@ -1,4 +1,4 @@
-# [1.40.0-lafuenti.3](https://github.com/jlafuenti/beacon/tree/lafuenti) (2026-10-29)
+# [1.40.0-lafuenti.4](https://github.com/jlafuenti/beacon/tree/lafuenti) (2026-10-29)
 
 Lafuenti fork of Beacon 1.40.0 for the kitchen family display. Upstream is
 [asachs01/beacon](https://github.com/asachs01/beacon); nothing here is sent upstream.
