@@ -1,4 +1,4 @@
-# [1.40.0-lafuenti.5](https://github.com/jlafuenti/beacon/tree/lafuenti) (2026-10-29)
+# [1.40.0-lafuenti.6](https://github.com/jlafuenti/beacon/tree/lafuenti) (2026-10-29)
 
 Lafuenti fork of Beacon 1.40.0 for the kitchen family display. Upstream is
 [asachs01/beacon](https://github.com/asachs01/beacon); nothing here is sent upstream.
@@ -11,11 +11,13 @@ Lafuenti fork of Beacon 1.40.0 for the kitchen family display. Upstream is
 * **music:** media player allowlist with an entity picker; Default Player is now applied
 * **weather:** panel layout for 1920x1080 — next 24 hours always visible, 7-day grid with highs, lows and precipitation chance, details tiles with sunrise/sunset from sun.sun
 * **chores:** adults' columns on the Chores tab can come from Grocy (Coming up limited to the next 7 days) through HA (sensor.grocy_chores + per-person due lists); unassigned chores show for both adults, Done fires the phone-button event so the HA chore loop completes it in Grocy
+* **screensaver:** optional photo album behind the screensaver clock (Settings > Display > Photo Screen Saver), using the slideshow interval
 * **alarm:** new Alarm tab — state banner, keypad, Arm Away / Home / Night and Disarm for an alarm_control_panel entity
 
 ### Bug Fixes
 
 * **photos:** the Photos tab lists the photo_directory from the add-on's read-only /media map and serves the files itself; HA has no REST media_source routes, so upstream's browse/resolve calls 404 through ingress
+* **chores:** the 7-day Coming up window counts calendar days, so a DST change inside the week no longer drops the last day
 * **app:** the saved Default View is applied once settings load instead of being read before they arrive
 
 # [1.40.0](https://github.com/asachs01/beacon/compare/v1.39.6...v1.40.0) (2026-10-17)

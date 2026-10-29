@@ -156,7 +156,11 @@ export function useGrocyChores(members: FamilyMember[], options: UseGrocyChoresO
 
   const byMember: GrocyMemberChores[] = useMemo(() => {
     const today = startOfToday();
-    const horizon = today + COMING_UP_DAYS * 24 * 60 * 60 * 1000;
+    // Calendar days, not 7×24h: a DST change inside the window would
+    // otherwise shift the cut-off by an hour and drop the last day.
+    const horizonDate = new Date(today);
+    horizonDate.setDate(horizonDate.getDate() + COMING_UP_DAYS);
+    const horizon = horizonDate.getTime();
     return adults.map((member) => {
       const listId = resolveChoreList(member, options.listsByMember);
       const items = openItems[listId] ?? [];

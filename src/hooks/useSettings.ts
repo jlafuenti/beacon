@@ -67,6 +67,8 @@ export interface BeaconSettings {
 
   // Display
   screenSaverEnabled: boolean;
+  /** Cycle the photo album (photo_directory) behind the screensaver clock. */
+  screenSaverPhotos: boolean;
   dimTimeout: number;       // minutes
   screenSaverTimeout: number; // minutes
   alwaysOnDisplay: boolean;
@@ -139,6 +141,7 @@ function buildDefaults(): BeaconSettings {
     advancedDashboard: false,
 
     screenSaverEnabled: true,
+    screenSaverPhotos: false,
     dimTimeout: 5,
     screenSaverTimeout: config.screen_saver_timeout,
     alwaysOnDisplay: false,

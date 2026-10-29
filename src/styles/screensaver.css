@@ -31,6 +31,44 @@
   background: var(--bg-primary, #0a0a0a);
 }
 
+/* Photo album behind the clock (Lafuenti fork) */
+.screensaver-overlay--photos {
+  background: #000;
+}
+
+.screensaver-photos {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #000;
+}
+
+.screensaver-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 1.5s ease;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.screensaver-photo--current {
+  opacity: 1;
+}
+
+.screensaver-overlay--photos .screensaver-time,
+.screensaver-overlay--photos .screensaver-date {
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.85), 0 0 4px rgba(0, 0, 0, 0.9);
+}
+
+.screensaver-overlay--photos .screensaver-date {
+  color: rgba(255, 255, 255, 0.75);
+}
+
 /* Clock element — absolutely positioned, moves around */
 .screensaver-clock {
   position: absolute;

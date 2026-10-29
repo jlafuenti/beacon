@@ -824,6 +824,8 @@ export function App() {
         enabled={settings.screenSaverEnabled}
         dimTimeoutMin={settings.dimTimeout}
         screenSaverTimeoutMin={settings.screenSaverTimeout}
+        photos={settings.screenSaverPhotos}
+        photoIntervalSec={settings.photoInterval}
       />
 
       {/* Demo indicator — only show outside of add-on ingress */}

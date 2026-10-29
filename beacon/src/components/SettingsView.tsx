@@ -1765,6 +1765,16 @@ export function SettingsView({
                 onChange={(v) => onUpdateSettings({ screenSaverTimeout: v })}
               />
             </div>
+            <div className="settings-row">
+              <div>
+                <div className="settings-row-label">{t('settings.display.screenSaverPhotosLabel')}</div>
+                <div className="settings-row-sublabel">{t('settings.display.screenSaverPhotosSublabel')}</div>
+              </div>
+              <Toggle
+                checked={settings.screenSaverPhotos}
+                onChange={(v) => onUpdateSettings({ screenSaverPhotos: v })}
+              />
+            </div>
           </>
         )}
       </div>

@@ -613,4 +613,8 @@ export const it: Record<TranslationKey, string> = {
   'settings.chores.grocyListLabel': '{name}\'s due list',
   'settings.chores.grocyListSublabel': 'Todo list holding this person\'s due chores (item description chore_id:N)',
   'settings.chores.grocyListAuto': 'Auto (todo.<name>_s_chores)',
+
+  // ---- Lafuenti fork: photo screensaver ----
+  'settings.display.screenSaverPhotosLabel': 'Photo Screen Saver',
+  'settings.display.screenSaverPhotosSublabel': 'Cycle the photo album behind the clock, using the slideshow interval',
 };
