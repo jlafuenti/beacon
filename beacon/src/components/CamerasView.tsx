@@ -22,6 +22,8 @@ interface CamerasViewProps {
 const SNAPSHOT_MS = 2_000;
 /** After falling back to snapshots, try the live stream again this often. */
 const HLS_RETRY_MS = 60_000;
+/** A stream that has not produced a frame by then is treated as dead (e.g. a cloud camera HA cannot reach). */
+const HLS_START_TIMEOUT_MS = 20_000;
 
 export function CamerasView({ cameraIds, motionByCamera, focusId, onFocusChange }: CamerasViewProps) {
   const { t } = useTranslation();
@@ -124,8 +126,11 @@ function CameraTile({ entityId, name, available, accessToken, motion, large = fa
   const [mode, setMode] = useState<'hls' | 'snapshot'>('hls');
   const [playing, setPlaying] = useState(false);
   const [stamp, setStamp] = useState(() => Date.now());
+  /** The snapshot request failed too: nothing to show for this camera right now. */
+  const [snapshotBroken, setSnapshotBroken] = useState(false);
 
-  // Live stream. A fatal HLS error (or a camera HA cannot stream) drops to snapshots.
+  // Live stream. A fatal HLS error, a stream that never starts, or a camera HA
+  // cannot stream at all drops to snapshots.
   useEffect(() => {
     if (mode !== 'hls' || !available) return;
     const video = videoRef.current;
@@ -137,6 +142,9 @@ function CameraTile({ entityId, name, available, accessToken, motion, large = fa
       setPlaying(false);
       setMode('snapshot');
     };
+    const startTimer = setTimeout(fallback, HLS_START_TIMEOUT_MS);
+    const onPlaying = () => clearTimeout(startTimer);
+    video.addEventListener('playing', onPlaying);
 
     requestCameraStream(entityId).then((url) => {
       if (cancelled) return;
@@ -171,6 +179,8 @@ function CameraTile({ entityId, name, available, accessToken, motion, large = fa
 
     return () => {
       cancelled = true;
+      clearTimeout(startTimer);
+      video.removeEventListener('playing', onPlaying);
       if (hls) hls.destroy();
       video.removeAttribute('src');
       video.load();
@@ -203,7 +213,15 @@ function CameraTile({ entityId, name, available, accessToken, motion, large = fa
             src={cameraSnapshotUrl(entityId, large ? 1280 : 640, stamp, accessToken)}
             alt=""
             draggable={false}
+            onLoad={() => setSnapshotBroken(false)}
+            onError={() => setSnapshotBroken(true)}
           />
+          {snapshotBroken && !playing && (
+            <div className="camera-tile-unavailable">
+              <Cctv size={large ? 48 : 28} strokeWidth={1.25} />
+              <span>{t('cameras.noPicture')}</span>
+            </div>
+          )}
           {mode === 'hls' && (
             <video
               ref={videoRef}

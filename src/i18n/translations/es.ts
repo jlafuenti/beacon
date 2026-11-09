@@ -630,6 +630,7 @@ export const es: Record<TranslationKey, string> = {
   'cameras.motion': 'Motion',
   'cameras.backToGrid': 'All cameras',
   'cameras.unavailable': 'Camera unavailable',
+  'cameras.noPicture': 'No picture from this camera right now',
   'settings.integrations.camerasTitle': 'Cameras',
   'settings.integrations.camerasLabel': 'Cameras on the Cameras tab',
   'settings.integrations.camerasSublabel': 'Each one streams live (HLS), with snapshots every 2 s as a fallback',

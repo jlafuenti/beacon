@@ -1,3 +1,9 @@
+# [1.40.0-lafuenti.10](https://github.com/jlafuenti/beacon/tree/lafuenti) (2026-11-09)
+
+### Bug Fixes
+
+* **cameras:** a stream that shows no frame within 20 s falls back to snapshots instead of staying black; when the snapshot fails too the tile says so ("No picture from this camera right now") rather than showing nothing
+
 # [1.40.0-lafuenti.9](https://github.com/jlafuenti/beacon/tree/lafuenti) (2026-11-09)
 
 ### Features
