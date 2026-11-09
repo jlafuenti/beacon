@@ -6,10 +6,10 @@ import { useTranslation } from '../../i18n';
 /** Per-member calendar grid (default layout's main content). */
 export function FamilyCalendarCard({ config, context }: DashboardCardProps) {
   const { t } = useTranslation();
-  const { members, byMember, other, todayEvents, onEventClick, selectedMemberFilter, toggleMemberFilter, isViewingToday } = context;
+  const { members, byMember, other, todayEvents, onEventClick, selectedMemberFilter, toggleMemberFilter, isViewingToday, hasSharedCalendars } = context;
   const showOther = readBoolean(config, 'show_other', true);
 
-  const hasMemberCalendars = members.some(
+  const hasMemberCalendars = !!hasSharedCalendars || members.some(
     (m) => m.calendar_entity || (m.additional_calendar_entities?.length ?? 0) > 0,
   );
 

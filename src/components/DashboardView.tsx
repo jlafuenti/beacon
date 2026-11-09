@@ -32,6 +32,9 @@ interface DashboardViewProps {
   onWeatherClick?: () => void;
   onEventClick?: (event: CalendarEvent) => void;
   members?: FamilyMember[];
+  /** Shared HA calendar shown under every parent / every child (Settings > Family). */
+  sharedAdultCalendar?: string;
+  sharedChildCalendar?: string;
   taskmateUsers?: TaskmateUser[];
   layout?: 'default' | 'classic' | 'compact';
   advancedDashboard?: boolean;
@@ -58,6 +61,8 @@ export function DashboardView({
   onWeatherClick,
   onEventClick,
   members = [],
+  sharedAdultCalendar = '',
+  sharedChildCalendar = '',
   taskmateUsers = [],
   layout = 'default',
   advancedDashboard = false,
@@ -88,7 +93,10 @@ export function DashboardView({
     return () => clearInterval(timer);
   }, []);
 
-  const { byMember, other } = useFamilyEvents(events, members, selectedDate);
+  const { byMember, other } = useFamilyEvents(events, members, selectedDate, {
+    adults: sharedAdultCalendar,
+    children: sharedChildCalendar,
+  });
   const { todaysMenu } = useMealPlans();
   const { layout: regions, updateLayout, views, activeViewId, setActiveViewId, addView, renameView, removeView } = useDashboardLayout(layout);
 
@@ -128,6 +136,7 @@ export function DashboardView({
     toggleMemberFilter,
     byMember,
     other,
+    hasSharedCalendars: !!(sharedAdultCalendar || sharedChildCalendar),
     selectedDate,
     isViewingToday,
     goToPreviousDay,

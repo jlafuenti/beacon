@@ -14,6 +14,8 @@ interface ScreenSaverProps {
   photos?: boolean;
   /** Seconds per photo. */
   photoIntervalSec?: number;
+  /** cover crops to fill; contain keeps the whole photo with black bars. */
+  photoFit?: 'cover' | 'contain';
 }
 
 export function ScreenSaver({
@@ -22,6 +24,7 @@ export function ScreenSaver({
   screenSaverTimeoutMin = 10,
   photos = false,
   photoIntervalSec = 30,
+  photoFit = 'cover',
 }: ScreenSaverProps) {
   const [phase, setPhase] = useState<Phase>('awake');
   const [now, setNow] = useState(new Date());
@@ -97,7 +100,7 @@ export function ScreenSaver({
 
   return (
     <div className={`screensaver-overlay${photos ? ' screensaver-overlay--photos' : ''}`} onClick={wake}>
-      {photos && <ScreenSaverPhotos intervalSec={photoIntervalSec} />}
+      {photos && <ScreenSaverPhotos intervalSec={photoIntervalSec} fit={photoFit} />}
       <div
         className="screensaver-clock"
         style={{ left: `${position.x}%`, top: `${position.y}%` }}
@@ -114,7 +117,7 @@ export function ScreenSaver({
  * screensaver is showing, so the album is (re)loaded and shuffled each
  * time it comes on and no timer runs while the display is in use.
  */
-function ScreenSaverPhotos({ intervalSec }: { intervalSec: number }) {
+function ScreenSaverPhotos({ intervalSec, fit }: { intervalSec: number; fit: 'cover' | 'contain' }) {
   const { currentPhoto, photoCount } = usePhotos(['local'], intervalSec);
   // Keep the previous photo mounted briefly so the new one can fade in over it.
   const [shown, setShown] = useState<{ url: string; key: number }[]>([]);
@@ -134,7 +137,7 @@ function ScreenSaverPhotos({ intervalSec }: { intervalSec: number }) {
       {shown.map((p, i) => (
         <img
           key={p.key}
-          className={`screensaver-photo${i === shown.length - 1 ? ' screensaver-photo--current' : ''}`}
+          className={`screensaver-photo${i === shown.length - 1 ? ' screensaver-photo--current' : ''}${fit === 'contain' ? ' screensaver-photo--contain' : ''}`}
           src={p.url}
           alt=""
           draggable={false}

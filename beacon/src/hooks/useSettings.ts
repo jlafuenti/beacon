@@ -68,6 +68,12 @@ export interface BeaconSettings {
   photoDirectory: string;
   photoInterval: number;
   photoTransition: 'fade' | 'slide';
+  /** cover crops to fill the screen; contain keeps the whole photo with black bars. */
+  photoFit: 'cover' | 'contain';
+  /** HA calendar every parent-role member also shows (e.g. the shared Family Calendar). '' = none. */
+  sharedAdultCalendar: string;
+  /** HA calendar every child-role member also shows. '' = none. */
+  sharedChildCalendar: string;
 
   // Dashboard
   dashboardLayout: 'default' | 'classic' | 'compact';
@@ -148,6 +154,9 @@ function buildDefaults(): BeaconSettings {
     photoDirectory: config.photo_directory,
     photoInterval: config.photo_interval,
     photoTransition: 'fade',
+    photoFit: 'contain',
+    sharedAdultCalendar: '',
+    sharedChildCalendar: '',
 
     dashboardLayout: 'default',
     advancedDashboard: false,

@@ -6,10 +6,11 @@
 .alarm-view {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 20px;
   height: 100%;
-  padding: 36px 48px;
+  padding: 24px 40px;
   overflow-y: auto;
+  box-sizing: border-box;
 }
 
 .alarm-empty {
@@ -29,11 +30,12 @@
   display: flex;
   align-items: center;
   gap: 24px;
-  padding: 28px 36px;
+  padding: 20px 32px;
   border-radius: 20px;
   background: var(--bg-secondary);
   border: 2px solid transparent;
   color: var(--text-primary);
+  flex-shrink: 0;
   transition: background 0.3s, border-color 0.3s;
 }
 
@@ -112,9 +114,10 @@
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  padding: 24px;
+  padding: 18px 24px;
   border-radius: 20px;
   background: var(--bg-secondary);
+  min-height: 0;
 }
 
 .alarm-keypad-panel--shake {
@@ -166,7 +169,8 @@
 }
 
 .alarm-key {
-  height: 92px;
+  /* scales with the panel height so four rows plus the banner fit a 1080 screen */
+  height: clamp(60px, 8.5vh, 92px);
   border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
   border-radius: 16px;
   background: var(--bg-primary);
@@ -206,9 +210,10 @@
   border: 2px solid transparent;
   border-radius: 18px;
   font-family: var(--font-display);
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 600;
   cursor: pointer;
+  min-height: 0;
   transition: filter 0.12s, transform 0.08s;
   -webkit-tap-highlight-color: transparent;
 }

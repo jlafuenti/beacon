@@ -10,29 +10,53 @@ export interface FamilyEventsMap {
   other: CalendarEvent[];
 }
 
+/** Shared HA calendars attached by role (Settings > Family > Shared calendars, Lafuenti fork). */
+export interface SharedCalendars {
+  /** Shown under every parent-role member. */
+  adults?: string;
+  /** Shown under every child-role member. */
+  children?: string;
+}
+
 /**
- * Groups a given day's calendar events by family member using their
- * calendar_entity field. Unmatched events go into `other`.
+ * The HA calendars a member's column shows: their own primary and additional
+ * calendars plus the shared calendar for their role.
+ */
+export function memberCalendarIds(member: FamilyMember, shared?: SharedCalendars): string[] {
+  const ids = new Set<string>();
+  if (member.calendar_entity) ids.add(member.calendar_entity);
+  for (const entity of member.additional_calendar_entities || []) ids.add(entity);
+  const roleShared = member.role === 'child' ? shared?.children : shared?.adults;
+  if (roleShared) ids.add(roleShared);
+  return Array.from(ids);
+}
+
+/**
+ * Groups a given day's calendar events by family member. A calendar linked to
+ * several members (two adults sharing one, or a shared role calendar) puts the
+ * event under each of them. Events nobody claims go into `other`.
  */
 export function useFamilyEvents(
   events: CalendarEvent[],
   members: FamilyMember[],
   referenceDate: Date = new Date(),
+  shared?: SharedCalendars,
 ): FamilyEventsMap {
+  const sharedAdults = shared?.adults ?? '';
+  const sharedChildren = shared?.children ?? '';
   return useMemo(() => {
     const day = startOfDay(referenceDate);
     const todayEvents = events.filter((e) =>
       isSameDay(startOfDay(parseISO(e.start)), day),
     );
 
-    // Build a calendarId → memberId lookup (primary + additional calendars)
-    const calToMember = new Map<string, string>();
+    // calendarId → every member it belongs to
+    const calToMembers = new Map<string, string[]>();
     for (const m of members) {
-      if (m.calendar_entity) {
-        calToMember.set(m.calendar_entity, m.id);
-      }
-      for (const entity of m.additional_calendar_entities || []) {
-        calToMember.set(entity, m.id);
+      for (const id of memberCalendarIds(m, { adults: sharedAdults, children: sharedChildren })) {
+        const list = calToMembers.get(id) ?? [];
+        list.push(m.id);
+        calToMembers.set(id, list);
       }
     }
 
@@ -44,9 +68,9 @@ export function useFamilyEvents(
     const other: CalendarEvent[] = [];
 
     for (const event of todayEvents) {
-      const memberId = calToMember.get(event.calendarId);
-      if (memberId && byMember.has(memberId)) {
-        byMember.get(memberId)!.push(event);
+      const owners = calToMembers.get(event.calendarId);
+      if (owners && owners.length > 0) {
+        for (const memberId of owners) byMember.get(memberId)?.push(event);
       } else {
         other.push(event);
       }
@@ -59,5 +83,5 @@ export function useFamilyEvents(
     other.sort((a, b) => a.start.localeCompare(b.start));
 
     return { byMember, other };
-  }, [events, members, referenceDate]);
+  }, [events, members, referenceDate, sharedAdults, sharedChildren]);
 }

@@ -67,6 +67,8 @@ export interface DashboardCardContext {
   toggleMemberFilter: (memberId: string) => void;
   byMember: Map<string, CalendarEvent[]>;
   other: CalendarEvent[];
+  /** An Adults' or Children's shared calendar is configured (Settings > Family), so the member grid applies even if no member has a calendar of their own. */
+  hasSharedCalendars?: boolean;
   /** Day currently browsed via the topbar's day navigation (defaults to today). */
   selectedDate: Date;
   isViewingToday: boolean;

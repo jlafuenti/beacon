@@ -59,6 +59,10 @@
   opacity: 1;
 }
 
+.screensaver-photo--contain {
+  object-fit: contain;
+}
+
 .screensaver-overlay--photos .screensaver-time,
 .screensaver-overlay--photos .screensaver-date {
   color: rgba(255, 255, 255, 0.92);

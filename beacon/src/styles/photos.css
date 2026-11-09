@@ -25,6 +25,11 @@
   object-fit: cover;
 }
 
+/* Settings > Photos > Fit: whole photo, black bars where the ratio differs (Lafuenti fork) */
+.photo-frame-image--contain {
+  object-fit: contain;
+}
+
 @keyframes photo-crossfade {
   from {
     opacity: 0;

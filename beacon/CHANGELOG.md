@@ -1,3 +1,11 @@
+# [1.40.0-lafuenti.11](https://github.com/jlafuenti/beacon/tree/lafuenti) (2026-11-09)
+
+### Features
+
+* **photos:** Settings > Integrations > Photos > Photo Fit: Fit keeps the whole photo with black bars (default), Fill crops as before; applies to the Photos tab and the photo screensaver. The Photos tab now honours the slideshow interval setting
+* **family:** Settings > Family > Shared calendars: an Adults' calendar and a Children's calendar, each with its own colour, shown in every parent's / every child's dashboard column besides their own calendars; a calendar linked to several members now appears under each of them
+* **alarm:** the Alarm tab fits a 1080-pixel-high panel without scrolling (tighter paddings, keypad keys scale with the viewport)
+
 # [1.40.0-lafuenti.10](https://github.com/jlafuenti/beacon/tree/lafuenti) (2026-11-09)
 
 ### Bug Fixes

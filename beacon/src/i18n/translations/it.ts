@@ -641,4 +641,16 @@ export const it: Record<TranslationKey, string> = {
   'settings.integrations.cameraAutoSwitchSublabel': 'Open the Cameras tab on the camera whose sensor fired, then return to the previous tab',
   'settings.integrations.cameraHoldLabel': 'Return after motion clears',
   'settings.integrations.cameraHoldSublabel': 'Seconds to keep the camera up once every sensor is off again',
+  // ---- Lafuenti fork: photo fit + shared calendars ----
+  'settings.integrations.photoFitLabel': 'Photo Fit',
+  'settings.integrations.photoFitSublabel': 'Fit keeps the whole photo with black bars; Fill crops it to the screen',
+  'settings.integrations.photoFitContain': 'Fit',
+  'settings.integrations.photoFitCover': 'Fill',
+  'settings.family.sharedCalendarsTitle': 'Shared calendars',
+  'settings.family.sharedCalendarsDesc': 'A calendar every adult, or every child, shows in their column besides their own. Pick its colour with the swatch.',
+  'settings.family.sharedAdultCalendarLabel': "Adults' calendar",
+  'settings.family.sharedAdultCalendarSublabel': 'Shown under every parent',
+  'settings.family.sharedChildCalendarLabel': "Children's calendar",
+  'settings.family.sharedChildCalendarSublabel': 'Shown under every child',
+  'settings.family.sharedCalendarColor': 'Calendar colour',
 };

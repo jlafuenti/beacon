@@ -15,6 +15,8 @@ interface PhotoFrameProps {
   showClock?: boolean;
   showWeather?: boolean;
   intervalSeconds?: number;
+  /** cover crops to fill; contain shows the whole photo with black bars (Settings > Photos). */
+  fit?: 'cover' | 'contain';
   weatherText?: string;
   /** Music state — pass these to show NowPlayingBar over photos */
   musicPlayer?: MediaPlayer | null;
@@ -44,6 +46,7 @@ export function PhotoFrame({
   showClock = true,
   showWeather = false,
   intervalSeconds = 30,
+  fit = 'cover',
   weatherText,
   musicPlayer,
   onMusicPlay,
@@ -143,7 +146,7 @@ export function PhotoFrame({
       {/* Photo with crossfade */}
       <div className="photo-frame-image-wrapper" key={fadeKey}>
         <img
-          className="photo-frame-image"
+          className={`photo-frame-image${fit === 'contain' ? ' photo-frame-image--contain' : ''}`}
           src={currentPhoto?.url}
           alt={currentPhoto?.caption || t('photoFrame.photoAlt')}
         />

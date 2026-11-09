@@ -687,6 +687,8 @@ export function App() {
               onWeatherClick={() => setActiveView('weather')}
               onEventClick={handleEventClick}
               members={members}
+              sharedAdultCalendar={settings.sharedAdultCalendar}
+              sharedChildCalendar={settings.sharedChildCalendar}
               taskmateUsers={dashboardTasks.users}
               layout={settings.dashboardLayout}
               advancedDashboard={settings.advancedDashboard}
@@ -771,6 +773,8 @@ export function App() {
           <WeatherView />
         ) : activeView === 'photos' ? (
           <PhotoFrame
+            fit={settings.photoFit}
+            intervalSeconds={settings.photoInterval}
             musicPlayer={music.activePlayer}
             onMusicPlay={() => music.activePlayer && music.play(music.activePlayer.entity_id)}
             onMusicPause={() => music.activePlayer && music.pause(music.activePlayer.entity_id)}
@@ -894,6 +898,7 @@ export function App() {
         screenSaverTimeoutMin={settings.screenSaverTimeout}
         photos={settings.screenSaverPhotos}
         photoIntervalSec={settings.photoInterval}
+        photoFit={settings.photoFit}
       />
 
       {/* Demo indicator — only show outside of add-on ingress */}

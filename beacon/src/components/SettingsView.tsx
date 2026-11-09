@@ -1045,6 +1045,54 @@ export function SettingsView({
       <h2 className="settings-section-title">{t('settings.family.title')}</h2>
       <p className="settings-section-desc">{t('settings.family.desc')}</p>
 
+      {memberFormMode === 'list' && (
+        <div className="settings-group">
+          <div className="settings-group-title">{t('settings.family.sharedCalendarsTitle')}</div>
+          <p className="settings-row-sublabel" style={{ marginBottom: 8 }}>{t('settings.family.sharedCalendarsDesc')}</p>
+          {([
+            ['sharedAdultCalendar', 'settings.family.sharedAdultCalendarLabel', 'settings.family.sharedAdultCalendarSublabel'],
+            ['sharedChildCalendar', 'settings.family.sharedChildCalendarLabel', 'settings.family.sharedChildCalendarSublabel'],
+          ] as const).map(([key, labelKey, sublabelKey]) => {
+            const entity = settings[key];
+            const color = entity ? settings.calendarColors[entity] : undefined;
+            return (
+              <div key={key} className="settings-row" style={{ gap: 12 }}>
+                <div>
+                  <div className="settings-row-label">{t(labelKey)}</div>
+                  <div className="settings-row-sublabel">{t(sublabelKey)}</div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {entity && (
+                    <label className="settings-color-custom" title={t('settings.family.sharedCalendarColor')}>
+                      <input
+                        type="color"
+                        value={color || '#14b8a6'}
+                        onChange={(e) => onUpdateSettings({
+                          calendarColors: { ...settings.calendarColors, [entity]: e.target.value },
+                        })}
+                        aria-label={t('settings.family.sharedCalendarColor')}
+                      />
+                    </label>
+                  )}
+                  <select
+                    className="settings-select"
+                    value={entity}
+                    onChange={(e) => onUpdateSettings({ [key]: e.target.value } as Partial<BeaconSettings>)}
+                  >
+                    <option value="">{t('common.none')}</option>
+                    {calendars.map((cal) => (
+                      <option key={cal.id} value={cal.id}>
+                        {cal.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {memberFormMode === 'list' ? (
         <div className="settings-group">
           <div className="settings-fm-list">
@@ -1821,6 +1869,20 @@ export function SettingsView({
               { value: 'slide', label: t('settings.integrations.slide') },
             ]}
             onChange={(v) => onUpdateSettings({ photoTransition: v })}
+          />
+        </div>
+        <div className="settings-row">
+          <div>
+            <div className="settings-row-label">{t('settings.integrations.photoFitLabel')}</div>
+            <div className="settings-row-sublabel">{t('settings.integrations.photoFitSublabel')}</div>
+          </div>
+          <Segment
+            value={settings.photoFit}
+            options={[
+              { value: 'contain', label: t('settings.integrations.photoFitContain') },
+              { value: 'cover', label: t('settings.integrations.photoFitCover') },
+            ]}
+            onChange={(v) => onUpdateSettings({ photoFit: v })}
           />
         </div>
       </div>
