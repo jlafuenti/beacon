@@ -3,7 +3,7 @@
   "version": "1.1.0",
   "private": true,
   "type": "module",
-  "description": "Family command center for wall-mounted displays — a Home Assistant add-on",
+  "description": "Family command center for wall-mounted displays \u2014 a Home Assistant add-on",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -23,6 +23,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "date-fns": "^4.1.0",
     "gridstack": "^13.2.0",
+    "hls.js": "^1.7.4",
     "lucide-react": "^1.7.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

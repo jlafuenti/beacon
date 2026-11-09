@@ -45,6 +45,11 @@ function getHaToken() {
   return _haToken;
 }
 
+/** Base URL HA paths are fetched under (ingress base path in add-on mode) — for <img>/<video> sources. */
+export function getHaBaseUrl(): string {
+  return getBaseUrl();
+}
+
 /**
  * Set the HA token dynamically (e.g. from ingress token request).
  */

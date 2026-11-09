@@ -16,6 +16,8 @@ import { ChoresView } from './components/ChoresView';
 import { Leaderboard } from './components/Leaderboard';
 import { Sidebar, SidebarView, resolveVisibleNav } from './components/Sidebar';
 import { AlarmView } from './components/AlarmView';
+import { CamerasView } from './components/CamerasView';
+import { useCameraMotion } from './hooks/useCameraMotion';
 import { MusicView } from './components/MusicView';
 import { PhotoFrame } from './components/PhotoFrame';
 import { NowPlayingBar } from './components/NowPlayingBar';
@@ -173,6 +175,20 @@ export function App() {
   const [activeView, setActiveView] = useState<SidebarView>(
     (settings.defaultView as SidebarView) || 'dashboard'
   );
+
+  // ---- Cameras tab: pull the panel to a camera when its motion sensor fires (Lafuenti fork) ----
+  const cameraMotion = useCameraMotion(
+    settings.cameraMotionSensors,
+    settings.cameraAutoSwitch && settings.cameraIds.length > 0 && !settings.hiddenViews.includes('cameras'),
+  );
+  const [cameraFocus, setCameraFocus] = useState<string | null>(null);
+  const activeViewRef = useRef(activeView);
+  activeViewRef.current = activeView;
+  /** Tab to return to once motion clears; null when the user opened Cameras themselves. */
+  const cameraReturnViewRef = useRef<SidebarView | null>(null);
+  const cameraReturnTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** A tap during a pull holds off further pulls until that motion has fully cleared. */
+  const cameraPullSuppressedRef = useRef(false);
 
   // Sidebar tabs the user kept, in their order (Settings → General → Sidebar tabs).
   const visibleNav = useMemo(
@@ -469,6 +485,17 @@ export function App() {
         setShowLeaderboard(true);
         return;
       }
+      // A manual tap during a camera motion pull cancels the auto-return and
+      // keeps the pull from grabbing the screen again until the motion clears.
+      if (cameraReturnTimerRef.current) {
+        clearTimeout(cameraReturnTimerRef.current);
+        cameraReturnTimerRef.current = null;
+      }
+      if (cameraReturnViewRef.current) {
+        cameraReturnViewRef.current = null;
+        cameraPullSuppressedRef.current = true;
+      }
+      if (view !== 'cameras') setCameraFocus(null);
       // All other views: close any open panel and switch view
       setShowLeaderboard(false);
       setActiveView(view);
@@ -479,6 +506,40 @@ export function App() {
   const handleClosePanel = useCallback(() => {
     setShowLeaderboard(false);
   }, []);
+
+  // Motion on a configured sensor: open Cameras on that camera and wake the
+  // screensaver; once every sensor is off again, go back after the hold time.
+  const cameraMotionKey = cameraMotion.active.join(',');
+  useEffect(() => {
+    const active = cameraMotionKey ? cameraMotionKey.split(',') : [];
+    if (active.length > 0) {
+      if (cameraReturnTimerRef.current) {
+        clearTimeout(cameraReturnTimerRef.current);
+        cameraReturnTimerRef.current = null;
+      }
+      if (cameraPullSuppressedRef.current) return;
+      setCameraFocus((current) => (current && active.includes(current) ? current : active[0]));
+      if (activeViewRef.current !== 'cameras') {
+        cameraReturnViewRef.current = activeViewRef.current;
+        setShowLeaderboard(false);
+        setActiveView('cameras');
+      }
+      window.dispatchEvent(new Event('beacon:wake'));
+      return;
+    }
+    cameraPullSuppressedRef.current = false;
+    if (cameraReturnViewRef.current && !cameraReturnTimerRef.current) {
+      cameraReturnTimerRef.current = setTimeout(() => {
+        cameraReturnTimerRef.current = null;
+        const back = cameraReturnViewRef.current;
+        cameraReturnViewRef.current = null;
+        if (back && activeViewRef.current === 'cameras') {
+          setActiveView(back);
+          setCameraFocus(null);
+        }
+      }, Math.max(0, settings.cameraAutoSwitchHold) * 1000);
+    }
+  }, [cameraMotionKey, settings.cameraAutoSwitchHold]);
 
   // Build a set of chore IDs completed today (for the dashboard checklist).
   // We use the first member for now; a member-picker could be added later.
@@ -692,6 +753,13 @@ export function App() {
             groceryListIds={settings.groceryListIds}
             taskListIds={settings.taskListIds}
             hideLocalLists={settings.hideLocalLists}
+          />
+        ) : activeView === 'cameras' ? (
+          <CamerasView
+            cameraIds={settings.cameraIds}
+            motionByCamera={cameraMotion.byCamera}
+            focusId={cameraFocus}
+            onFocusChange={setCameraFocus}
           />
         ) : activeView === 'alarm' ? (
           <AlarmView entityId={settings.alarmEntity} />

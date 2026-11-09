@@ -267,6 +267,45 @@ function haWsCommand(command, timeoutMs = 10000) {
 }
 
 /**
+ * POST /beacon-action/camera-stream { entity_id }
+ * HA only hands out HLS playlists over its WebSocket API (camera/stream), so
+ * the Cameras tab asks here and then pulls /api/hls/<token>/... through the
+ * /api proxy above like any other HA call. (Lafuenti fork)
+ */
+function handleCameraStreamAction(req, res) {
+  if (req.method !== 'POST') {
+    res.writeHead(405, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Method not allowed' }));
+    return;
+  }
+
+  collectBody(req).then(async (bodyBuf) => {
+    try {
+      const { entity_id } = JSON.parse((bodyBuf || '{}').toString('utf8'));
+      if (typeof entity_id !== 'string' || !entity_id.startsWith('camera.')) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'entity_id must be a camera entity' }));
+        return;
+      }
+      const result = await haWsCommand({ type: 'camera/stream', entity_id, format: 'hls' }, 20000);
+      if (!result || typeof result.url !== 'string') {
+        throw new Error('Home Assistant returned no stream URL');
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, url: result.url }));
+    } catch (err) {
+      res.writeHead(502, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message, code: err.code || null }));
+    }
+  }).catch((err) => {
+    if (!res.headersSent) {
+      res.writeHead(413, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+  });
+}
+
+/**
  * POST /beacon-action/calendar-event
  * Body: { op: 'create'|'update'|'delete', entity_id, uid?, event? }
  * Bridges calendar event create/update/delete to HA's WS-only commands
@@ -849,6 +888,12 @@ const server = http.createServer((req, res) => {
   // Event fire API (Lafuenti fork)
   if (req.url === '/beacon-action/event') {
     handleEventFire(req, res);
+    return;
+  }
+
+  // Camera HLS stream (WS-only command in HA core)
+  if (req.url === '/beacon-action/camera-stream') {
+    handleCameraStreamAction(req, res);
     return;
   }
 

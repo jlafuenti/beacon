@@ -1,3 +1,11 @@
+# [1.40.0-lafuenti.9](https://github.com/jlafuenti/beacon/tree/lafuenti) (2026-11-09)
+
+### Features
+
+* **cameras:** new Cameras tab: every chosen camera live in a grid (HLS through the add-on, snapshots every 2 s as a fallback), tap a tile to focus it with the others in a strip underneath; Settings > Integrations > Cameras picks the cameras, a motion sensor per camera, the auto-switch and the hold time
+* **cameras:** outside motion pulls the panel to that camera and wakes Beacon's screensaver, then returns to the previous tab once every sensor has been off for the hold time; a tap during the pull cancels the return
+* **add-on:** `/beacon-action/camera-stream` bridges HA's WebSocket-only `camera/stream`; HLS playlists and segments go through the existing `/api` proxy
+
 # [1.40.0-lafuenti.8](https://github.com/jlafuenti/beacon/tree/lafuenti) (2026-10-29)
 
 Lafuenti fork of Beacon 1.40.0 for the kitchen family display. Upstream is

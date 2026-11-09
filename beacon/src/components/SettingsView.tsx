@@ -17,7 +17,8 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { NAV_ITEMS as SIDEBAR_NAV_ITEMS, resolveNavOrder, type SidebarView } from './Sidebar';
-import { EntityPicker, EntityMultiPicker } from './cards/EntityPicker';
+import { EntityPicker, EntityMultiPicker, useEntityOptions } from './cards/EntityPicker';
+import { displayCameraName } from '../api/cameras';
 import { AnyListClient } from '../api/anylist';
 import { GroceryList } from '../types/grocery';
 import { themes } from '../styles/themes';
@@ -133,6 +134,94 @@ function Segment<T extends string>({
           {opt.label}
         </button>
       ))}
+    </div>
+  );
+}
+
+/** Lafuenti fork: Settings → Integrations → Cameras (the Cameras tab and its motion auto-switch). */
+function CamerasSettingsGroup({
+  settings,
+  onUpdateSettings,
+}: {
+  settings: BeaconSettings;
+  onUpdateSettings: (patch: Partial<BeaconSettings>) => void;
+}) {
+  const { t } = useTranslation();
+  const options = useEntityOptions();
+  const labelFor = (id: string) => displayCameraName(options.find((o) => o.entity_id === id)?.label ?? id);
+
+  return (
+    <div className="settings-group">
+      <div className="settings-group-title">{t('settings.integrations.camerasTitle')}</div>
+      <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 12 }}>
+        <div>
+          <div className="settings-row-label">{t('settings.integrations.camerasLabel')}</div>
+          <div className="settings-row-sublabel">{t('settings.integrations.camerasSublabel')}</div>
+        </div>
+        <EntityMultiPicker
+          selectedIds={settings.cameraIds}
+          defaultDomain="camera"
+          onToggle={(entityId) => {
+            const next = settings.cameraIds.includes(entityId)
+              ? settings.cameraIds.filter((id) => id !== entityId)
+              : [...settings.cameraIds, entityId];
+            const sensors = { ...settings.cameraMotionSensors };
+            if (!next.includes(entityId)) delete sensors[entityId];
+            onUpdateSettings({ cameraIds: next, cameraMotionSensors: sensors });
+          }}
+        />
+        {settings.cameraIds.length > 0 && (
+          <div className="settings-row-sublabel">
+            {t('settings.integrations.camerasSelected', { count: settings.cameraIds.length })}
+          </div>
+        )}
+      </div>
+      {settings.cameraIds.length > 0 && (
+        <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 12 }}>
+          <div>
+            <div className="settings-row-label">{t('settings.integrations.cameraMotionLabel')}</div>
+            <div className="settings-row-sublabel">{t('settings.integrations.cameraMotionSublabel')}</div>
+          </div>
+          {settings.cameraIds.map((cameraId) => (
+            <div key={cameraId} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div className="settings-row-sublabel">{labelFor(cameraId)}</div>
+              <EntityPicker
+                value={settings.cameraMotionSensors[cameraId] ?? ''}
+                defaultDomain="binary_sensor"
+                onChange={(entityId) => {
+                  const sensors = { ...settings.cameraMotionSensors };
+                  if (entityId) sensors[cameraId] = entityId; else delete sensors[cameraId];
+                  onUpdateSettings({ cameraMotionSensors: sensors });
+                }}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="settings-row">
+        <div>
+          <div className="settings-row-label">{t('settings.integrations.cameraAutoSwitchLabel')}</div>
+          <div className="settings-row-sublabel">{t('settings.integrations.cameraAutoSwitchSublabel')}</div>
+        </div>
+        <Toggle
+          checked={settings.cameraAutoSwitch}
+          onChange={(v) => onUpdateSettings({ cameraAutoSwitch: v })}
+        />
+      </div>
+      <div className="settings-row">
+        <div>
+          <div className="settings-row-label">{t('settings.integrations.cameraHoldLabel')}</div>
+          <div className="settings-row-sublabel">{t('settings.integrations.cameraHoldSublabel')}</div>
+        </div>
+        <Slider
+          value={settings.cameraAutoSwitchHold}
+          min={0}
+          max={300}
+          step={15}
+          unit=" s"
+          onChange={(v) => onUpdateSettings({ cameraAutoSwitchHold: v })}
+        />
+      </div>
     </div>
   );
 }
@@ -1691,6 +1780,8 @@ export function SettingsView({
           />
         </div>
       </div>
+
+      <CamerasSettingsGroup settings={settings} onUpdateSettings={onUpdateSettings} />
 
       <div className="settings-group">
         <div className="settings-group-title">{t('settings.integrations.photosTitle')}</div>

@@ -635,6 +635,24 @@ export const en = {
   'settings.family.choresEnabledLabel': 'Has chores',
   'settings.family.choresEnabledSublabel': 'Off: no column on the Chores tab and not assignable; calendars still work',
   'settings.family.noChores': 'No chores',
+  // ---- Lafuenti fork: cameras ----
+  'nav.cameras': 'Cameras',
+  'cameras.empty': 'No cameras yet. Pick them under Settings > Integrations > Cameras.',
+  'cameras.live': 'Live',
+  'cameras.snapshot': 'Snapshots',
+  'cameras.motion': 'Motion',
+  'cameras.backToGrid': 'All cameras',
+  'cameras.unavailable': 'Camera unavailable',
+  'settings.integrations.camerasTitle': 'Cameras',
+  'settings.integrations.camerasLabel': 'Cameras on the Cameras tab',
+  'settings.integrations.camerasSublabel': 'Each one streams live (HLS), with snapshots every 2 s as a fallback',
+  'settings.integrations.camerasSelected': '{count} selected',
+  'settings.integrations.cameraMotionLabel': 'Motion sensors',
+  'settings.integrations.cameraMotionSublabel': 'When a sensor turns on, the panel opens that camera',
+  'settings.integrations.cameraAutoSwitchLabel': 'Auto-switch on motion',
+  'settings.integrations.cameraAutoSwitchSublabel': 'Open the Cameras tab on the camera whose sensor fired, then return to the previous tab',
+  'settings.integrations.cameraHoldLabel': 'Return after motion clears',
+  'settings.integrations.cameraHoldSublabel': 'Seconds to keep the camera up once every sensor is off again',
 } as const;
 
 export type TranslationKey = keyof typeof en;

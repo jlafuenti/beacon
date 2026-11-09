@@ -38,7 +38,8 @@ export function ScreenSaver({
 
   // Listen for user interaction globally
   useEffect(() => {
-    const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'];
+    // 'beacon:wake' is dispatched by the app itself (e.g. a camera motion pull).
+    const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'beacon:wake'];
     events.forEach((e) => window.addEventListener(e, wake, { passive: true }));
     return () => {
       events.forEach((e) => window.removeEventListener(e, wake));

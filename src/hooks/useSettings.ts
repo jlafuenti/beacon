@@ -57,6 +57,14 @@ export interface BeaconSettings {
   musicPlayerIds: string[];
   /** alarm_control_panel entity driven by the Alarm view. */
   alarmEntity: string;
+  /** camera entities on the Cameras tab, in order. */
+  cameraIds: string[];
+  /** camera entity → binary_sensor whose 'on' pulls the panel to that camera. */
+  cameraMotionSensors: Record<string, string>;
+  /** Jump to the Cameras tab when one of those sensors fires. */
+  cameraAutoSwitch: boolean;
+  /** Seconds to keep the camera up after every sensor is off again. */
+  cameraAutoSwitchHold: number;
   photoDirectory: string;
   photoInterval: number;
   photoTransition: 'fade' | 'slide';
@@ -133,6 +141,10 @@ function buildDefaults(): BeaconSettings {
     musicDefaultPlayer: '',
     musicPlayerIds: [],
     alarmEntity: '',
+    cameraIds: [],
+    cameraMotionSensors: {},
+    cameraAutoSwitch: true,
+    cameraAutoSwitchHold: 60,
     photoDirectory: config.photo_directory,
     photoInterval: config.photo_interval,
     photoTransition: 'fade',
