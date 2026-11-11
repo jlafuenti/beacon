@@ -246,7 +246,7 @@
   .alarm-banner { padding: 20px; gap: 16px; }
   .alarm-banner-state { font-size: 30px; }
   .alarm-body { grid-template-columns: 1fr; }
-  .alarm-actions { grid-template-rows: none; grid-template-columns: repeat(2, 1fr); }
+  .alarm-actions { grid-template-rows: none !important; grid-template-columns: repeat(2, 1fr); }
   .alarm-action { min-height: 72px; font-size: 18px; }
   .alarm-key { height: 68px; font-size: 26px; }
 }

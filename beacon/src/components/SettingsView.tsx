@@ -1827,6 +1827,16 @@ export function SettingsView({
             onChange={(entityId) => onUpdateSettings({ alarmEntity: entityId })}
           />
         </div>
+        <div className="settings-row">
+          <div>
+            <div className="settings-row-label">{t('settings.integrations.alarmShowNightLabel')}</div>
+            <div className="settings-row-sublabel">{t('settings.integrations.alarmShowNightSublabel')}</div>
+          </div>
+          <Toggle
+            checked={settings.alarmShowNight}
+            onChange={(v) => onUpdateSettings({ alarmShowNight: v })}
+          />
+        </div>
       </div>
 
       <CamerasSettingsGroup settings={settings} onUpdateSettings={onUpdateSettings} />

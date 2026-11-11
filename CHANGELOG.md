@@ -1,3 +1,9 @@
+# [1.40.0-lafuenti.12](https://github.com/jlafuenti/beacon/tree/lafuenti) (2026-11-10)
+
+### Features
+
+* **alarm:** Settings > Integrations > Alarm > Arm Night button (off by default): the Alarm tab shows Arm Away, Arm Home and Disarm, and Arm Night only when the setting is on
+
 # [1.40.0-lafuenti.11](https://github.com/jlafuenti/beacon/tree/lafuenti) (2026-11-09)
 
 ### Features

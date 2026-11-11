@@ -6,6 +6,8 @@ import { useTranslation, type TranslationKey } from '../i18n';
 interface AlarmViewProps {
   /** alarm_control_panel entity (Settings → Integrations → Alarm). */
   entityId: string;
+  /** Offer Arm Night (Settings → Integrations → Alarm). */
+  showNight?: boolean;
 }
 
 type ArmService = 'alarm_arm_away' | 'alarm_arm_home' | 'alarm_arm_night' | 'alarm_disarm';
@@ -60,7 +62,7 @@ function parsePanel(entity: { state: string; attributes: Record<string, unknown>
   };
 }
 
-export function AlarmView({ entityId }: AlarmViewProps) {
+export function AlarmView({ entityId, showNight = false }: AlarmViewProps) {
   const { t } = useTranslation();
   const [panel, setPanel] = useState<PanelState | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -191,7 +193,9 @@ export function AlarmView({ entityId }: AlarmViewProps) {
   const armButtons: Array<{ service: ArmService; labelKey: TranslationKey; icon: React.ReactNode }> = [
     { service: 'alarm_arm_away', labelKey: 'alarm.armAway', icon: <Plane size={26} strokeWidth={1.75} /> },
     { service: 'alarm_arm_home', labelKey: 'alarm.armHome', icon: <Home size={26} strokeWidth={1.75} /> },
-    { service: 'alarm_arm_night', labelKey: 'alarm.armNight', icon: <Moon size={26} strokeWidth={1.75} /> },
+    ...(showNight
+      ? [{ service: 'alarm_arm_night' as ArmService, labelKey: 'alarm.armNight' as TranslationKey, icon: <Moon size={26} strokeWidth={1.75} /> }]
+      : []),
   ];
 
   return (
@@ -248,7 +252,7 @@ export function AlarmView({ entityId }: AlarmViewProps) {
         </section>
 
         {/* Actions */}
-        <section className="alarm-actions">
+        <section className="alarm-actions" style={{ gridTemplateRows: `repeat(${armButtons.length + 1}, minmax(0, 1fr))` }}>
           {armButtons.map(({ service, labelKey, icon }) => (
             <button
               key={service}

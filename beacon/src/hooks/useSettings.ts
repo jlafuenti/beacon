@@ -57,6 +57,8 @@ export interface BeaconSettings {
   musicPlayerIds: string[];
   /** alarm_control_panel entity driven by the Alarm view. */
   alarmEntity: string;
+  /** Show the Arm Night button on the Alarm view (off when the panel has no night mode). */
+  alarmShowNight: boolean;
   /** camera entities on the Cameras tab, in order. */
   cameraIds: string[];
   /** camera entity → binary_sensor whose 'on' pulls the panel to that camera. */
@@ -147,6 +149,7 @@ function buildDefaults(): BeaconSettings {
     musicDefaultPlayer: '',
     musicPlayerIds: [],
     alarmEntity: '',
+    alarmShowNight: false,
     cameraIds: [],
     cameraMotionSensors: {},
     cameraAutoSwitch: true,

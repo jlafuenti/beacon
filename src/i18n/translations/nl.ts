@@ -565,6 +565,8 @@ export const nl: Record<TranslationKey, string> = {
   'settings.integrations.alarmTitle': 'Alarm',
   'settings.integrations.alarmEntityLabel': 'Alarm Panel',
   'settings.integrations.alarmEntitySublabel': 'alarm_control_panel entity driven by the Alarm tab',
+  'settings.integrations.alarmShowNightLabel': 'Arm Night button',
+  'settings.integrations.alarmShowNightSublabel': 'Show Arm Night on the Alarm tab; leave off when the panel has no night mode',
   'weatherView.next24Hours': 'Next 24 Hours',
   'weatherView.now': 'Now',
   'weatherView.sunrise': 'Sunrise',

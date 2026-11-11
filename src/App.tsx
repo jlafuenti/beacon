@@ -764,7 +764,7 @@ export function App() {
             onFocusChange={setCameraFocus}
           />
         ) : activeView === 'alarm' ? (
-          <AlarmView entityId={settings.alarmEntity} />
+          <AlarmView entityId={settings.alarmEntity} showNight={settings.alarmShowNight} />
         ) : activeView === 'timer' ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', padding: 24 }}>
             <Timer />
