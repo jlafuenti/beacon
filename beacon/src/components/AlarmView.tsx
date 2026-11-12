@@ -20,6 +20,8 @@ interface PanelState {
   codeArmRequired: boolean;
   /** Alarmo attributes — present while arming/pending/triggered. */
   delay?: number;
+  /** When the exit/entry delay runs out (epoch ms): state change time + delay. */
+  delayEndsAt?: number;
   openSensors?: Record<string, string> | null;
 }
 
@@ -50,16 +52,36 @@ function toneFor(state: string): 'off' | 'armed' | 'transition' | 'alert' | 'dea
   return 'armed';
 }
 
-function parsePanel(entity: { state: string; attributes: Record<string, unknown> }): PanelState {
+type PanelEntity = { state: string; attributes: Record<string, unknown>; last_changed?: string };
+
+function parsePanel(entity: PanelEntity): PanelState {
   const attrs = entity.attributes;
+  const delay = typeof attrs.delay === 'number' ? attrs.delay : undefined;
+  // Alarmo only publishes the total delay; the countdown runs from when the
+  // panel entered arming/pending (HA's last_changed for this state).
+  const changedAt = entity.last_changed ? Date.parse(entity.last_changed) : NaN;
   return {
     state: entity.state,
     friendlyName: (attrs.friendly_name as string) || 'Alarm',
     codeFormat: (attrs.code_format as string | null) ?? null,
     codeArmRequired: !!attrs.code_arm_required,
-    delay: typeof attrs.delay === 'number' ? attrs.delay : undefined,
+    delay,
+    delayEndsAt: delay != null && !Number.isNaN(changedAt) ? changedAt + delay * 1000 : undefined,
     openSensors: (attrs.open_sensors as Record<string, string> | null) ?? null,
   };
+}
+
+/** Seconds left until `endsAt`, re-rendered every second while `active`. */
+function useSecondsLeft(endsAt: number | undefined, active: boolean): number | undefined {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!active || endsAt == null) return;
+    setNow(Date.now());
+    const tick = setInterval(() => setNow(Date.now()), 250);
+    return () => clearInterval(tick);
+  }, [active, endsAt]);
+  if (!active || endsAt == null) return undefined;
+  return Math.max(0, Math.ceil((endsAt - now) / 1000));
 }
 
 export function AlarmView({ entityId, showNight = false }: AlarmViewProps) {
@@ -71,11 +93,13 @@ export function AlarmView({ entityId, showNight = false }: AlarmViewProps) {
   const [notice, setNotice] = useState<{ kind: 'error' | 'info'; text: string } | null>(null);
   const [shake, setShake] = useState(false);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inDelay = panel != null && (panel.state === 'arming' || panel.state === 'pending');
+  const secondsLeft = useSecondsLeft(panel?.delayEndsAt, inDelay);
 
   const fetchPanel = useCallback(async (): Promise<PanelState | null> => {
     if (!entityId) return null;
     try {
-      const entity = await haFetch(`/api/states/${entityId}`) as { state: string; attributes: Record<string, unknown> } | null;
+      const entity = await haFetch(`/api/states/${entityId}`) as PanelEntity | null;
       if (!entity) throw new Error('empty state');
       const next = parsePanel(entity);
       setPanel(next);
@@ -206,7 +230,7 @@ export function AlarmView({ entityId, showNight = false }: AlarmViewProps) {
           <span className="alarm-banner-name">{panel.friendlyName}</span>
           <span className="alarm-banner-state">{stateLabel}</span>
           {panel.delay != null && tone === 'transition' && (
-            <span className="alarm-banner-sub">{t('alarm.delaySeconds', { seconds: panel.delay })}</span>
+            <span className="alarm-banner-sub">{t('alarm.delaySeconds', { seconds: secondsLeft ?? panel.delay })}</span>
           )}
           {openSensorNames.length > 0 && (
             <span className="alarm-banner-sub">{t('alarm.openSensors', { count: openSensorNames.length })}</span>
