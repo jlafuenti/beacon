@@ -11,6 +11,8 @@ export interface MediaPlayer {
   media_duration?: number;
   media_position?: number;
   entity_picture?: string;
+  /** HA's own proxy path for the art (relative, token-signed); loads where entity_picture's host does not. */
+  entity_picture_local?: string;
   app_name?: string;
   device_class?: string;
   volume_level?: number;

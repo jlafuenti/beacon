@@ -9,6 +9,7 @@ import { ShoppingCard } from './ShoppingCard';
 import { HaEntityCard } from './HaEntityCard';
 import { HaEntitiesListCard } from './HaEntitiesListCard';
 import { HaToggleCard } from './HaToggleCard';
+import { NowPlayingCard } from './NowPlayingCard';
 
 export const cardRegistry: Record<string, CardDefinition> = {
   'clock-weather': {
@@ -84,6 +85,15 @@ export const cardRegistry: Record<string, CardDefinition> = {
       { type: 'entity', key: 'shoppingEntity', labelKey: 'cards.shopping.entityLabel' },
     ],
     allowedRegions: ['sidebar'],
+  },
+  'now-playing': {
+    type: 'now-playing',
+    displayNameKey: 'cards.nowPlaying.displayName',
+    icon: '🎵',
+    component: NowPlayingCard,
+    defaultConfig: {},
+    defaultSize: 'sm',
+    allowedRegions: ['topbar', 'sidebar', 'main'],
   },
   'ha-entity': {
     type: 'ha-entity',

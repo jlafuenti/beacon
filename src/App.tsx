@@ -695,6 +695,14 @@ export function App() {
               timeFormat={settings.timeFormat}
               selectedDate={dashboardDate}
               onSelectedDateChange={setDashboardDate}
+              music={{
+                player: music.activePlayer,
+                onPlay: () => music.activePlayer && music.play(music.activePlayer.entity_id),
+                onPause: () => music.activePlayer && music.pause(music.activePlayer.entity_id),
+                onNext: () => music.activePlayer && music.next(music.activePlayer.entity_id),
+                onPrevious: () => music.activePlayer && music.previous(music.activePlayer.entity_id),
+                onOpen: () => setActiveView('music'),
+              }}
             />
             <OmniAdd
               onAddEvent={handleAddEvent}

@@ -1,3 +1,13 @@
+# [1.40.0-lafuenti.14](https://github.com/jlafuenti/beacon/tree/lafuenti) (2026-11-13)
+
+### Features
+
+* **dashboard:** Now Playing card (Advanced Dashboard card picker, any region): album art, title, artist, player name and large previous / play-pause / next buttons for the active player; tapping the art opens the Music view; shows "Nothing playing" when idle
+
+### Bug Fixes
+
+* **music:** album art loads through Home Assistant's own media-player proxy (`entity_picture_local`) instead of the player's absolute `entity_picture` URL; Music Assistant sets that to its own host and port, which a panel on another VLAN cannot reach, so the Music view and the Now Playing bar showed the "Album art" placeholder text
+
 # [1.40.0-lafuenti.12](https://github.com/jlafuenti/beacon/tree/lafuenti) (2026-11-10)
 
 ### Features

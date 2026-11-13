@@ -382,6 +382,8 @@ export const en = {
   'cards.agendaWeek.displayName': 'This Week',
   'cards.menu.displayName': 'Menu',
   'cards.tasks.displayName': 'Tasks',
+  'cards.nowPlaying.displayName': 'Now Playing',
+  'cards.nowPlaying.nothingPlaying': 'Nothing playing',
   'cards.shopping.displayName': 'Shopping',
   'cards.shopping.entityLabel': 'Shopping List Entity',
   'cards.haEntity.displayName': 'HA Entity',

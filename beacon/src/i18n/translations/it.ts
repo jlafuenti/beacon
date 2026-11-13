@@ -376,6 +376,8 @@ export const it: Record<TranslationKey, string> = {
   'cards.agendaWeek.displayName': 'Questa Settimana',
   'cards.menu.displayName': 'Menu',
   'cards.tasks.displayName': 'Attività',
+  'cards.nowPlaying.displayName': 'In riproduzione',
+  'cards.nowPlaying.nothingPlaying': 'Nessuna riproduzione',
   'cards.shopping.displayName': 'Spesa',
   'cards.shopping.entityLabel': 'Entità lista della spesa',
   'cards.haEntity.displayName': 'Entità HA',

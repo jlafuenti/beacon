@@ -16,7 +16,7 @@ import { AgendaWeekCard } from './cards/AgendaWeekCard';
 import { MenuCard } from './cards/MenuCard';
 import { TasksCard } from './cards/TasksCard';
 import type { TaskmateUser } from '../types/taskmate';
-import { DashboardCard, DashboardCardContext, DashboardRegionLayout, TodoItem } from '../types/dashboard-cards';
+import { DashboardCard, DashboardCardContext, DashboardMusicContext, DashboardRegionLayout, TodoItem } from '../types/dashboard-cards';
 import { useTranslation } from '../i18n';
 
 export type { TodoItem } from '../types/dashboard-cards';
@@ -41,6 +41,8 @@ interface DashboardViewProps {
   timeFormat: '12h' | '24h';
   selectedDate: Date;
   onSelectedDateChange: (date: Date) => void;
+  /** Active media player and controls, read by the Now Playing card. */
+  music?: DashboardMusicContext;
 }
 
 function renderCard(card: DashboardCard, context: DashboardCardContext) {
@@ -69,6 +71,7 @@ export function DashboardView({
   timeFormat,
   selectedDate,
   onSelectedDateChange,
+  music,
 }: DashboardViewProps) {
   const { t } = useTranslation();
   const [now, setNow] = useState(new Date());
@@ -151,6 +154,7 @@ export function DashboardView({
     filteredChores,
     completedChoreIds,
     onToggleChore,
+    music,
   };
 
   // The legacy composition deliberately bypasses cards, GridStack, persisted

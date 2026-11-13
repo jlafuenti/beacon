@@ -3,6 +3,7 @@ import { CalendarEvent, WeatherData } from '../types';
 import { Chore, FamilyMember } from './family';
 import { DayMenu } from './meals';
 import type { TaskmateUser } from './taskmate';
+import type { MediaPlayer } from './music';
 import type { TranslationKey } from '../i18n/translations/en';
 
 export interface TodoItem {
@@ -84,6 +85,18 @@ export interface DashboardCardContext {
   filteredChores: Chore[];
   completedChoreIds: Set<string>;
   onToggleChore: (choreId: string) => void;
+  /** Active media player and its controls, for the Now Playing card. */
+  music?: DashboardMusicContext;
+}
+
+export interface DashboardMusicContext {
+  player: MediaPlayer | null;
+  onPlay: () => void;
+  onPause: () => void;
+  onNext: () => void;
+  onPrevious: () => void;
+  /** Opens the full Music view. */
+  onOpen?: () => void;
 }
 
 export interface DashboardCardProps {

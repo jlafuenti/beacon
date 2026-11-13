@@ -376,6 +376,8 @@ export const nl: Record<TranslationKey, string> = {
   'cards.agendaWeek.displayName': 'Deze Week',
   'cards.menu.displayName': 'Menu',
   'cards.tasks.displayName': 'Taken',
+  'cards.nowPlaying.displayName': 'Nu aan het spelen',
+  'cards.nowPlaying.nothingPlaying': 'Er speelt niets',
   'cards.shopping.displayName': 'Boodschappen',
   'cards.shopping.entityLabel': 'Boodschappenlijst-entiteit',
   'cards.haEntity.displayName': 'HA-entiteit',

@@ -8,7 +8,7 @@ import {
   VolumeX,
 } from 'lucide-react';
 import { MediaPlayer } from '../types/music';
-import { getConfig } from '../config';
+import { albumArtUrl } from '../utils/albumArt';
 import { useTranslation } from '../i18n';
 
 interface NowPlayingBarProps {
@@ -53,12 +53,7 @@ export function NowPlayingBar({
   const isPlaying = player.state === 'playing';
   const duration = player.media_duration ?? 0;
   const progressPct = duration > 0 ? Math.min(position / duration, 1) * 100 : 0;
-  const haUrl = getConfig().ha_url.replace(/\/$/, '');
-  const artSrc = player.entity_picture
-    ? (player.entity_picture.startsWith('http')
-      ? player.entity_picture
-      : `${haUrl}${player.entity_picture}`)
-    : null;
+  const artSrc = albumArtUrl(player);
 
   return (
     <div className="now-playing-bar" role="region" aria-label={t('music.nowPlaying')}>

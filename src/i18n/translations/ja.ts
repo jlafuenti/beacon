@@ -376,6 +376,8 @@ export const ja: Record<TranslationKey, string> = {
   'cards.agendaWeek.displayName': '今週',
   'cards.menu.displayName': 'メニュー',
   'cards.tasks.displayName': 'タスク',
+  'cards.nowPlaying.displayName': '再生中',
+  'cards.nowPlaying.nothingPlaying': '再生していません',
   'cards.shopping.displayName': '買い物',
   'cards.shopping.entityLabel': '買い物リストのエンティティ',
   'cards.haEntity.displayName': 'HAエンティティ',

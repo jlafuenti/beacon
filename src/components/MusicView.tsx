@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getConfig } from '../config';
+import { albumArtUrl } from '../utils/albumArt';
 import {
   Play,
   Pause,
@@ -87,12 +87,7 @@ export function MusicView({
   const duration = player?.media_duration ?? 0;
   const progress = duration > 0 ? Math.min(position / duration, 1) : 0;
 
-  const haUrl = getConfig().ha_url.replace(/\/$/, '');
-  const artSrc = player?.entity_picture
-    ? (player.entity_picture.startsWith('http')
-      ? player.entity_picture
-      : `${haUrl}${player.entity_picture}`)
-    : null;
+  const artSrc = albumArtUrl(player);
 
   const [showPlayerDropdown, setShowPlayerDropdown] = useState(false);
 
