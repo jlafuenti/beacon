@@ -569,6 +569,8 @@ export const pt: Record<TranslationKey, string> = {
   'settings.integrations.alarmEntitySublabel': 'alarm_control_panel entity driven by the Alarm tab',
   'settings.integrations.alarmShowNightLabel': 'Arm Night button',
   'settings.integrations.alarmShowNightSublabel': 'Show Arm Night on the Alarm tab; leave off when the panel has no night mode',
+  'settings.integrations.alarmAutoSwitchLabel': 'Jump to the Alarm tab',
+  'settings.integrations.alarmAutoSwitchSublabel': 'Open the Alarm tab while the panel is arming, in its entry delay or triggered, and keep it there; return to the previous tab afterwards',
   'weatherView.next24Hours': 'Next 24 Hours',
   'weatherView.now': 'Now',
   'weatherView.sunrise': 'Sunrise',

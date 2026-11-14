@@ -1837,6 +1837,16 @@ export function SettingsView({
             onChange={(v) => onUpdateSettings({ alarmShowNight: v })}
           />
         </div>
+        <div className="settings-row">
+          <div>
+            <div className="settings-row-label">{t('settings.integrations.alarmAutoSwitchLabel')}</div>
+            <div className="settings-row-sublabel">{t('settings.integrations.alarmAutoSwitchSublabel')}</div>
+          </div>
+          <Toggle
+            checked={settings.alarmAutoSwitch}
+            onChange={(v) => onUpdateSettings({ alarmAutoSwitch: v })}
+          />
+        </div>
       </div>
 
       <CamerasSettingsGroup settings={settings} onUpdateSettings={onUpdateSettings} />

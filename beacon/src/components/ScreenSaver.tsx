@@ -3,6 +3,10 @@ import { format } from 'date-fns';
 import { usePhotos } from '../hooks/usePhotos';
 
 const POSITION_INTERVAL = 30_000; // move clock every 30s
+/** How long input is ignored after a wake press (Lafuenti fork). */
+const SWALLOW_MS = 700;
+/** A heartbeat gap this long means the page was frozen or asleep. */
+const FROZEN_GAP_MS = 3_000;
 
 type Phase = 'awake' | 'dim' | 'screensaver';
 
@@ -39,13 +43,53 @@ export function ScreenSaver({
     setPhase('awake');
   }, []);
 
-  // Listen for user interaction globally
+  // Lafuenti fork: a tap that wakes the screen only wakes it. The overlay used to
+  // vanish on touchstart, so the rest of that tap (the click) landed on whatever
+  // was underneath, e.g. a key on the alarm PIN pad. The waking press is now
+  // swallowed, and so is anything else for a moment after. The same applies when
+  // the page has been frozen (the kiosk app's own screensaver freezes the WebView):
+  // a press that arrives after a long gap in the heartbeat is treated as a wake.
+  const phaseRef = useRef<Phase>('awake');
+  phaseRef.current = enabled ? phase : 'awake';
+  const swallowUntilRef = useRef(0);
+  const lastTickRef = useRef(Date.now());
+
   useEffect(() => {
+    const tick = setInterval(() => { lastTickRef.current = Date.now(); }, 1000);
+    const armSwallow = () => { swallowUntilRef.current = Date.now() + SWALLOW_MS; };
+    const onVisible = () => { if (!document.hidden) armSwallow(); };
+    const isPress = (type: string) => type === 'mousedown' || type === 'touchstart' || type === 'pointerdown' || type === 'keydown';
+
+    const onInput = (e: Event) => {
+      const asleep = phaseRef.current !== 'awake' || Date.now() - lastTickRef.current > FROZEN_GAP_MS;
+      if (isPress(e.type) && (asleep || Date.now() < swallowUntilRef.current)) {
+        armSwallow();
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      lastTickRef.current = Date.now();
+      wake();
+    };
+    const swallow = (e: Event) => {
+      if (Date.now() < swallowUntilRef.current) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
     // 'beacon:wake' is dispatched by the app itself (e.g. a camera motion pull).
-    const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'beacon:wake'];
-    events.forEach((e) => window.addEventListener(e, wake, { passive: true }));
+    const wakeEvents = ['mousemove', 'mousedown', 'pointerdown', 'keydown', 'touchstart', 'scroll', 'beacon:wake'];
+    const swallowEvents = ['click', 'dblclick', 'mouseup', 'pointerup', 'touchend', 'contextmenu'];
+    wakeEvents.forEach((e) => window.addEventListener(e, onInput, { capture: true, passive: false }));
+    swallowEvents.forEach((e) => window.addEventListener(e, swallow, { capture: true, passive: false }));
+    document.addEventListener('visibilitychange', onVisible);
+    document.addEventListener('resume', armSwallow);
     return () => {
-      events.forEach((e) => window.removeEventListener(e, wake));
+      clearInterval(tick);
+      wakeEvents.forEach((e) => window.removeEventListener(e, onInput, { capture: true }));
+      swallowEvents.forEach((e) => window.removeEventListener(e, swallow, { capture: true }));
+      document.removeEventListener('visibilitychange', onVisible);
+      document.removeEventListener('resume', armSwallow);
     };
   }, [wake]);
 

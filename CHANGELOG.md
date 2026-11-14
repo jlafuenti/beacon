@@ -1,3 +1,13 @@
+# [1.40.0-lafuenti.15](https://github.com/jlafuenti/beacon/tree/lafuenti) (2026-11-14)
+
+### Features
+
+* **alarm:** the display jumps to the Alarm tab while the panel is arming, pending or triggered, and stays there (no camera pull, no default-view reset after a page reload); it returns to the previous tab once the hold ends. Setting "Jump to the Alarm tab", on by default. While the Alarm tab is open and the panel is not disarmed, camera motion no longer pulls the display away either
+
+### Bug Fixes
+
+* **screensaver:** a tap that wakes the dim or photo screensaver only wakes it. The overlay closed on touchstart, so the rest of the tap landed on whatever was underneath (a stray key on the alarm PIN pad). The waking press and anything for 700 ms after it are swallowed; so is a press that arrives right after the page was frozen by the kiosk app's screensaver
+
 # [1.40.0-lafuenti.14](https://github.com/jlafuenti/beacon/tree/lafuenti) (2026-11-13)
 
 ### Features

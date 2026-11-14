@@ -59,6 +59,8 @@ export interface BeaconSettings {
   alarmEntity: string;
   /** Show the Arm Night button on the Alarm view (off when the panel has no night mode). */
   alarmShowNight: boolean;
+  /** Jump to the Alarm tab while the panel is arming, pending or triggered, then return (Lafuenti fork). */
+  alarmAutoSwitch: boolean;
   /** camera entities on the Cameras tab, in order. */
   cameraIds: string[];
   /** camera entity → binary_sensor whose 'on' pulls the panel to that camera. */
@@ -150,6 +152,7 @@ function buildDefaults(): BeaconSettings {
     musicPlayerIds: [],
     alarmEntity: '',
     alarmShowNight: false,
+    alarmAutoSwitch: true,
     cameraIds: [],
     cameraMotionSensors: {},
     cameraAutoSwitch: true,

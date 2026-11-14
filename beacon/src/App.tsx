@@ -24,6 +24,7 @@ import { NowPlayingBar } from './components/NowPlayingBar';
 import { useMusic } from './hooks/useMusic';
 import { useNotifications } from './hooks/useNotifications';
 import { ScreenSaver } from './components/ScreenSaver';
+import { useAlarmState } from './hooks/useAlarmState';
 import { GroceryView } from './components/GroceryView';
 import { OmniAdd } from './components/OmniAdd';
 import { CalendarSidebar } from './components/CalendarSidebar';
@@ -190,6 +191,24 @@ export function App() {
   /** A tap during a pull holds off further pulls until that motion has fully cleared. */
   const cameraPullSuppressedRef = useRef(false);
 
+  // ---- Alarm tab hold (Lafuenti fork) ----
+  // While the panel is arming, pending or triggered the display goes to the
+  // Alarm tab and stays there: no camera pull, no default-view reset after a
+  // reload. While anyone is on the Alarm tab and the panel is not disarmed, camera
+  // pulls are held off too. Once the hold ends it returns to the previous tab.
+  const alarmState = useAlarmState(
+    settings.alarmEntity,
+    !!settings.alarmEntity && !settings.hiddenViews.includes('alarm'),
+  );
+  const alarmHold = settings.alarmAutoSwitch
+    && (alarmState === 'arming' || alarmState === 'pending' || alarmState === 'triggered');
+  const alarmBlocksPullRef = useRef(false);
+  alarmBlocksPullRef.current = alarmHold
+    || (activeView === 'alarm' && alarmState != null && alarmState !== 'disarmed');
+  const alarmHoldRef = useRef(false);
+  alarmHoldRef.current = alarmHold;
+  const alarmReturnViewRef = useRef<SidebarView | null>(null);
+
   // Sidebar tabs the user kept, in their order (Settings → General → Sidebar tabs).
   const visibleNav = useMemo(
     () => resolveVisibleNav(settings.navOrder, settings.hiddenViews),
@@ -205,7 +224,7 @@ export function App() {
   useEffect(() => {
     if (!settingsLoaded || defaultViewAppliedRef.current) return;
     defaultViewAppliedRef.current = true;
-    if (userNavigatedRef.current) return;
+    if (userNavigatedRef.current || alarmHoldRef.current) return;
     const wanted = (settings.defaultView as SidebarView) || 'dashboard';
     const hidden = settings.hiddenViews.includes(wanted);
     setActiveView(hidden ? (visibleNav[0]?.id ?? 'dashboard') : wanted);
@@ -517,7 +536,7 @@ export function App() {
         clearTimeout(cameraReturnTimerRef.current);
         cameraReturnTimerRef.current = null;
       }
-      if (cameraPullSuppressedRef.current) return;
+      if (cameraPullSuppressedRef.current || alarmBlocksPullRef.current) return;
       setCameraFocus((current) => (current && active.includes(current) ? current : active[0]));
       if (activeViewRef.current !== 'cameras') {
         cameraReturnViewRef.current = activeViewRef.current;
@@ -540,6 +559,30 @@ export function App() {
       }, Math.max(0, settings.cameraAutoSwitchHold) * 1000);
     }
   }, [cameraMotionKey, settings.cameraAutoSwitchHold]);
+
+  useEffect(() => {
+    if (alarmHold) {
+      if (activeViewRef.current !== 'alarm') {
+        // Coming off a camera pull: return to where the pull started, not to Cameras.
+        const from = activeViewRef.current === 'cameras' && cameraReturnViewRef.current
+          ? cameraReturnViewRef.current
+          : activeViewRef.current;
+        if (cameraReturnTimerRef.current) {
+          clearTimeout(cameraReturnTimerRef.current);
+          cameraReturnTimerRef.current = null;
+        }
+        cameraReturnViewRef.current = null;
+        alarmReturnViewRef.current = from;
+        setShowLeaderboard(false);
+        setActiveView('alarm');
+      }
+      window.dispatchEvent(new Event('beacon:wake'));
+      return;
+    }
+    const back = alarmReturnViewRef.current;
+    alarmReturnViewRef.current = null;
+    if (back && activeViewRef.current === 'alarm') setActiveView(back);
+  }, [alarmHold]);
 
   // Build a set of chore IDs completed today (for the dashboard checklist).
   // We use the first member for now; a member-picker could be added later.
