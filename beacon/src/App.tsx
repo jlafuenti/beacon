@@ -269,10 +269,19 @@ export function App() {
 
   // Helper: refetch events for a given week, with one extra day on either side
   // so multi-day events that bleed in/out of the visible week still render.
+  // Lafuenti fork: the window also covers the Dashboard's selected day and the
+  // next 7 days from today (its "This Week" column), so stepping the Dashboard
+  // past the calendar's week no longer shows a falsely empty day.
+  const dashboardDateRef = useRef(dashboardDate);
+  dashboardDateRef.current = dashboardDate;
   const refetchEventsForWeek = useCallback(
     async (weekStart: Date) => {
-      const rangeStart = addDays(weekStart, -1);
-      const rangeEnd = addDays(weekStart, 8);
+      const today = startOfDay(new Date());
+      const day = dashboardDateRef.current;
+      const starts = [addDays(weekStart, -1), addDays(today, -1), addDays(day, -1)];
+      const ends = [addDays(weekStart, 8), addDays(today, 9), addDays(day, 2)];
+      const rangeStart = new Date(Math.min(...starts.map((d) => d.getTime())));
+      const rangeEnd = new Date(Math.max(...ends.map((d) => d.getTime())));
       await fetchEvents(rangeStart.toISOString(), rangeEnd.toISOString());
     },
     [fetchEvents],
@@ -302,7 +311,7 @@ export function App() {
     }, 5 * 60 * 1000);
 
     return () => clearInterval(interval);
-  }, [connected, fetchCalendars, refetchEventsForWeek, visibleWeekStart]);
+  }, [connected, fetchCalendars, refetchEventsForWeek, visibleWeekStart, dashboardDate]);
 
   // Re-fetch when calendar colors or family members change so colors update
   // immediately, without recreating the 5-minute polling interval above.

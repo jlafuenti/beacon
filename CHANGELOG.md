@@ -1,3 +1,10 @@
+# [1.40.0-lafuenti.17](https://github.com/jlafuenti/beacon/tree/lafuenti) (2026-11-15)
+
+### Bug Fixes
+
+* **calendar:** moving to another week no longer shows a falsely empty week. An older fetch (a quick second tap on Next, or the 5-minute refresh of the week just left) could finish after the newer one and overwrite its events; only the newest fetch now writes. Calendars are fetched in parallel and a failed calendar is retried once
+* **dashboard:** the event window also covers the Dashboard's selected day and the next 7 days from today, so stepping the Dashboard past the calendar's week no longer shows an empty day
+
 # [1.40.0-lafuenti.16](https://github.com/jlafuenti/beacon/tree/lafuenti) (2026-11-15)
 
 ### Features

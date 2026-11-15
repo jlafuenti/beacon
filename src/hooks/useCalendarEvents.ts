@@ -45,6 +45,8 @@ export function useCalendarEvents(
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const calendarsRef = useRef<CalendarInfo[]>([]);
+  /** Lafuenti fork: only the newest fetch may write events (see fetchEvents). */
+  const fetchSeqRef = useRef(0);
   const colorOptionsRef = useRef(colorOptions);
   colorOptionsRef.current = colorOptions;
 
@@ -70,6 +72,12 @@ export function useCalendarEvents(
   const fetchEvents = useCallback(async (start: string, end: string) => {
     if (!connected && !hasToken()) return;
 
+    // Lafuenti fork: a fetch for an earlier week (a quick second tap on Next, or
+    // the 5-minute refresh of the week just left) could finish after the newer one
+    // and overwrite it, leaving the new week falsely empty. Each fetch takes a
+    // sequence number and only the newest one may write. Calendars are fetched in
+    // parallel (shorter window) and a failed calendar is retried once.
+    const seq = ++fetchSeqRef.current;
     setLoading(true);
     try {
       let cals = calendarsRef.current;
@@ -78,11 +86,30 @@ export function useCalendarEvents(
       }
       if (cals.length === 0) return;
 
-      const allEvents: CalendarEvent[] = [];
-      for (const cal of cals) {
+      const fetchOne = async (cal: CalendarInfo) => {
+        const params = new URLSearchParams({ start, end });
+        const url = `/api/calendars/${cal.id}?${params}`;
         try {
-          const params = new URLSearchParams({ start, end });
-          const result = await haFetch(`/api/calendars/${cal.id}?${params}`) as Array<{
+          return await haFetch(url);
+        } catch (err) {
+          console.warn(`Retrying events for ${cal.name}:`, err);
+          return await haFetch(url);
+        }
+      };
+      const results = await Promise.all(cals.map(async (cal) => {
+        try {
+          return { cal, result: await fetchOne(cal) };
+        } catch (err) {
+          console.error(`Failed to fetch events for ${cal.name}:`, err);
+          return { cal, result: null };
+        }
+      }));
+      if (seq !== fetchSeqRef.current) return;
+
+      const allEvents: CalendarEvent[] = [];
+      for (const { cal, result: raw } of results) {
+        {
+          const result = raw as Array<{
             uid?: string;
             summary: string;
             start: string | { dateTime: string; date: string };
@@ -120,15 +147,13 @@ export function useCalendarEvents(
               hasStableId: !!realUid,
             });
           }
-        } catch (err) {
-          console.error(`Failed to fetch events for ${cal.name}:`, err);
         }
       }
 
       allEvents.sort((a, b) => a.start.localeCompare(b.start));
       setEvents(allEvents);
     } finally {
-      setLoading(false);
+      if (seq === fetchSeqRef.current) setLoading(false);
     }
   }, [connected, fetchCalendars]);
 
