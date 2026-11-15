@@ -1,3 +1,9 @@
+# [1.40.0-lafuenti.16](https://github.com/jlafuenti/beacon/tree/lafuenti) (2026-11-15)
+
+### Features
+
+* **screensaver:** a tap that wakes the screen saver returns to the home screen (the Default View) and closes any open dialog. Skipped while the alarm needs the keypad (arming, entry delay, triggered, or the Alarm tab open while armed). Setting "Wake to the home screen", on by default
+
 # [1.40.0-lafuenti.15](https://github.com/jlafuenti/beacon/tree/lafuenti) (2026-11-14)
 
 ### Features

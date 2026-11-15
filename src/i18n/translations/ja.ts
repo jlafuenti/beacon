@@ -623,6 +623,8 @@ export const ja: Record<TranslationKey, string> = {
   // ---- Lafuenti fork: photo screensaver ----
   'settings.display.screenSaverPhotosLabel': 'Photo Screen Saver',
   'settings.display.screenSaverPhotosSublabel': 'Cycle the photo album behind the clock, using the slideshow interval',
+  'settings.display.screenSaverWakeHomeLabel': 'Wake to the home screen',
+  'settings.display.screenSaverWakeHomeSublabel': 'A tap that wakes the screen saver returns to the Default View, unless the alarm needs the keypad',
 
   // ---- Lafuenti fork: per-member chores switch ----
   'settings.family.choresEnabledLabel': 'Has chores',

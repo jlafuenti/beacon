@@ -529,6 +529,8 @@ export function App() {
   // Motion on a configured sensor: open Cameras on that camera and wake the
   // screensaver; once every sensor is off again, go back after the hold time.
   const cameraMotionKey = cameraMotion.active.join(',');
+  const cameraMotionKeyRef = useRef(cameraMotionKey);
+  cameraMotionKeyRef.current = cameraMotionKey;
   useEffect(() => {
     const active = cameraMotionKey ? cameraMotionKey.split(',') : [];
     if (active.length > 0) {
@@ -583,6 +585,23 @@ export function App() {
     alarmReturnViewRef.current = null;
     if (back && activeViewRef.current === 'alarm') setActiveView(back);
   }, [alarmHold]);
+
+  // Waking the screensaver by hand returns to the home screen (the Default View),
+  // except while the alarm needs the keypad (Lafuenti fork).
+  const handleScreenSaverWake = useCallback(() => {
+    if (!settings.screenSaverWakeHome || alarmBlocksPullRef.current) return;
+    const wanted = (settings.defaultView as SidebarView) || 'dashboard';
+    const home = settings.hiddenViews.includes(wanted) ? (visibleNav[0]?.id ?? 'dashboard') : wanted;
+    if (cameraReturnTimerRef.current) {
+      clearTimeout(cameraReturnTimerRef.current);
+      cameraReturnTimerRef.current = null;
+    }
+    cameraReturnViewRef.current = null;
+    cameraPullSuppressedRef.current = cameraMotionKeyRef.current !== '';
+    setShowLeaderboard(false);
+    setShowModal(false);
+    setActiveView(home);
+  }, [settings.screenSaverWakeHome, settings.defaultView, settings.hiddenViews, visibleNav]);
 
   // Build a set of chore IDs completed today (for the dashboard checklist).
   // We use the first member for now; a member-picker could be added later.
@@ -950,6 +969,7 @@ export function App() {
         photos={settings.screenSaverPhotos}
         photoIntervalSec={settings.photoInterval}
         photoFit={settings.photoFit}
+        onUserWake={handleScreenSaverWake}
       />
 
       {/* Demo indicator — only show outside of add-on ingress */}

@@ -20,6 +20,8 @@ interface ScreenSaverProps {
   photoIntervalSec?: number;
   /** cover crops to fill; contain keeps the whole photo with black bars. */
   photoFit?: 'cover' | 'contain';
+  /** Called when a person's press wakes the screensaver (not the app's own beacon:wake). */
+  onUserWake?: () => void;
 }
 
 export function ScreenSaver({
@@ -29,6 +31,7 @@ export function ScreenSaver({
   photos = false,
   photoIntervalSec = 30,
   photoFit = 'cover',
+  onUserWake,
 }: ScreenSaverProps) {
   const [phase, setPhase] = useState<Phase>('awake');
   const [now, setNow] = useState(new Date());
@@ -53,6 +56,8 @@ export function ScreenSaver({
   phaseRef.current = enabled ? phase : 'awake';
   const swallowUntilRef = useRef(0);
   const lastTickRef = useRef(Date.now());
+  const onUserWakeRef = useRef(onUserWake);
+  onUserWakeRef.current = onUserWake;
 
   useEffect(() => {
     const tick = setInterval(() => { lastTickRef.current = Date.now(); }, 1000);
@@ -63,9 +68,14 @@ export function ScreenSaver({
     const onInput = (e: Event) => {
       const asleep = phaseRef.current !== 'awake' || Date.now() - lastTickRef.current > FROZEN_GAP_MS;
       if (isPress(e.type) && (asleep || Date.now() < swallowUntilRef.current)) {
+        // Only the first press of a wake goes home; presses inside the swallow window do not.
+        const firstPress = Date.now() >= swallowUntilRef.current;
         armSwallow();
         e.preventDefault();
         e.stopPropagation();
+        if (firstPress && (phaseRef.current === 'screensaver' || Date.now() - lastTickRef.current > FROZEN_GAP_MS)) {
+          onUserWakeRef.current?.();
+        }
       }
       lastTickRef.current = Date.now();
       wake();

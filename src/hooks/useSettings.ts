@@ -87,6 +87,8 @@ export interface BeaconSettings {
   screenSaverEnabled: boolean;
   /** Cycle the photo album (photo_directory) behind the screensaver clock. */
   screenSaverPhotos: boolean;
+  /** A tap that wakes the screensaver returns to the Default View (Lafuenti fork). */
+  screenSaverWakeHome: boolean;
   dimTimeout: number;       // minutes
   screenSaverTimeout: number; // minutes
   alwaysOnDisplay: boolean;
@@ -169,6 +171,7 @@ function buildDefaults(): BeaconSettings {
 
     screenSaverEnabled: true,
     screenSaverPhotos: false,
+    screenSaverWakeHome: true,
     dimTimeout: 5,
     screenSaverTimeout: config.screen_saver_timeout,
     alwaysOnDisplay: false,

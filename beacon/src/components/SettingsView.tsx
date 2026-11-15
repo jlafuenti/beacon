@@ -1965,6 +1965,16 @@ export function SettingsView({
                 onChange={(v) => onUpdateSettings({ screenSaverPhotos: v })}
               />
             </div>
+            <div className="settings-row">
+              <div>
+                <div className="settings-row-label">{t('settings.display.screenSaverWakeHomeLabel')}</div>
+                <div className="settings-row-sublabel">{t('settings.display.screenSaverWakeHomeSublabel')}</div>
+              </div>
+              <Toggle
+                checked={settings.screenSaverWakeHome}
+                onChange={(v) => onUpdateSettings({ screenSaverWakeHome: v })}
+              />
+            </div>
           </>
         )}
       </div>
