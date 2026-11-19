@@ -55,6 +55,8 @@ export interface BeaconSettings {
   musicDefaultPlayer: string;
   /** media_player entities offered in the Music view (empty = every player). */
   musicPlayerIds: string[];
+  /** Display names for media players by entity_id (no UI; set in the settings file). */
+  musicPlayerNames: Record<string, string>;
   /** alarm_control_panel entity driven by the Alarm view. */
   alarmEntity: string;
   /** Show the Arm Night button on the Alarm view (off when the panel has no night mode). */
@@ -152,6 +154,7 @@ function buildDefaults(): BeaconSettings {
     shoppingEntity: '',
     musicDefaultPlayer: '',
     musicPlayerIds: [],
+    musicPlayerNames: {},
     alarmEntity: '',
     alarmShowNight: false,
     alarmAutoSwitch: true,

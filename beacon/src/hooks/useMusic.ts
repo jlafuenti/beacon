@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { MediaPlayer } from '../types/music';
 import { HomeAssistantClient } from '../api/homeassistant';
 import {
@@ -28,6 +28,8 @@ export interface UseMusicOptions {
   playerIds?: string[];
   /** Player selected before the user picks one (Settings → Integrations → Default Player). */
   defaultPlayer?: string;
+  /** Display names by entity_id, replacing Home Assistant's friendly_name (Settings file only). */
+  playerNames?: Record<string, string>;
 }
 
 export function useMusic(
@@ -35,7 +37,7 @@ export function useMusic(
   connected: boolean,
   options: UseMusicOptions = {},
 ): UseMusicReturn {
-  const [players, setPlayers] = useState<MediaPlayer[]>([]);
+  const [rawPlayers, setPlayers] = useState<MediaPlayer[]>([]);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const subscriptionRef = useRef<number | null>(null);
   const userPickedRef = useRef(false);
@@ -43,6 +45,11 @@ export function useMusic(
   // Stable key so a fresh array with the same ids does not resubscribe
   const allowKey = (options.playerIds ?? []).join(',');
   const defaultPlayer = options.defaultPlayer ?? '';
+  const namesKey = JSON.stringify(options.playerNames ?? {});
+  const players = useMemo(() => {
+    const names = JSON.parse(namesKey) as Record<string, string>;
+    return rawPlayers.map((p) => (names[p.entity_id] ? { ...p, friendly_name: names[p.entity_id] } : p));
+  }, [rawPlayers, namesKey]);
 
   const activePlayer =
     players.find((p) => p.state === 'playing') ||

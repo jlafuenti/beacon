@@ -131,6 +131,7 @@ export function App() {
   const music = useMusic(client, connected, {
     playerIds: settings.musicPlayerIds,
     defaultPlayer: settings.musicDefaultPlayer,
+    playerNames: settings.musicPlayerNames,
   });
   const {
     chores,
