@@ -200,8 +200,11 @@ export function App() {
     settings.alarmEntity,
     !!settings.alarmEntity && !settings.hiddenViews.includes('alarm'),
   );
+  // Only an armed house that has been tripped pulls the display over: the entry
+  // delay (pending) and the alarm itself (triggered). Arming does not (Jesse,
+  // 2026-11-19): a voice arm at night left the display on the Alarm tab.
   const alarmHold = settings.alarmAutoSwitch
-    && (alarmState === 'arming' || alarmState === 'pending' || alarmState === 'triggered');
+    && (alarmState === 'pending' || alarmState === 'triggered');
   const alarmBlocksPullRef = useRef(false);
   alarmBlocksPullRef.current = alarmHold
     || (activeView === 'alarm' && alarmState != null && alarmState !== 'disarmed');
@@ -594,6 +597,35 @@ export function App() {
     alarmReturnViewRef.current = null;
     if (back && activeViewRef.current === 'alarm') setActiveView(back);
   }, [alarmHold]);
+
+  // The Alarm tab left open on a disarmed panel goes home after two minutes
+  // without a touch (Lafuenti fork, 2026-11-19). Someone disarming at the keypad
+  // otherwise left it there, and every door chime then woke the screen onto it.
+  const ALARM_IDLE_HOME_MS = 120_000;
+  useEffect(() => {
+    if (activeView !== 'alarm' || alarmState !== 'disarmed' || alarmHold) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const goHome = () => {
+      if (activeViewRef.current !== 'alarm') return;
+      const wanted = (settings.defaultView as SidebarView) || 'dashboard';
+      const home = settings.hiddenViews.includes(wanted) || wanted === 'alarm'
+        ? (visibleNav.find((v) => v.id !== 'alarm')?.id ?? 'dashboard')
+        : wanted;
+      setActiveView(home);
+    };
+    const restart = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(goHome, ALARM_IDLE_HOME_MS);
+    };
+    restart();
+    window.addEventListener('pointerdown', restart, true);
+    window.addEventListener('keydown', restart, true);
+    return () => {
+      if (timer) clearTimeout(timer);
+      window.removeEventListener('pointerdown', restart, true);
+      window.removeEventListener('keydown', restart, true);
+    };
+  }, [activeView, alarmState, alarmHold, settings.defaultView, settings.hiddenViews, visibleNav]);
 
   // Waking the screensaver by hand returns to the home screen (the Default View),
   // except while the alarm needs the keypad (Lafuenti fork).
