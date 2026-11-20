@@ -109,6 +109,7 @@ export const ja: Record<TranslationKey, string> = {
   'weekCalendar.nextWeek': '次の週',
   'weekCalendar.back4WeeksAria': '4週間前へ',
   'weekCalendar.forward4WeeksAria': '4週間後へ',
+  'weekCalendar.resyncAria': 'すべてのカレンダーを再同期',
   'weekCalendar.previousDays': '前の日々',
   'weekCalendar.nextDays': '次の日々',
   'weekCalendar.dayGroup': '日付グループ{n}',

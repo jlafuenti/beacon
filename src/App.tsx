@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { startOfWeek, startOfDay, addDays, format } from 'date-fns';
 import { useHomeAssistant } from './hooks/useHomeAssistant';
+import { callHaService } from './api/ha-rest';
 import { useCalendarEvents, CalendarNotSupportedError } from './hooks/useCalendarEvents';
 import { useFamily } from './hooks/useFamily';
 import { useWeather } from './hooks/useWeather';
@@ -290,6 +291,25 @@ export function App() {
     },
     [fetchEvents],
   );
+
+  // Lafuenti fork: forced resync. HA's Google integration only polls Google about
+  // every 15 minutes, so ask HA to refresh each shown calendar first, then reload
+  // the week, and once more a few seconds later for a slow provider.
+  const resyncCalendars = useCallback(async () => {
+    const cals = await fetchCalendars();
+    const hidden = new Set(settings.permanentlyHiddenCalendars);
+    const ids = (cals || []).map((c) => c.id).filter((id) => id.startsWith('calendar.') && !hidden.has(id));
+    if (ids.length > 0) {
+      try {
+        await callHaService('homeassistant', 'update_entity', { entity_id: ids });
+      } catch (err) {
+        console.warn('Calendar update_entity failed, reloading anyway:', err);
+      }
+    }
+    await refetchEventsForWeek(visibleWeekStart);
+    await new Promise((r) => setTimeout(r, 4000));
+    await refetchEventsForWeek(visibleWeekStart);
+  }, [fetchCalendars, refetchEventsForWeek, settings.permanentlyHiddenCalendars, visibleWeekStart]);
 
   // Event notifications (browser + HA mobile_app)
   useNotifications(events, client, !focusMemberId, settings.notificationMinutes);
@@ -935,6 +955,7 @@ export function App() {
                   onEventReschedule={handleEventReschedule}
                   onVisibleWeekChange={setVisibleWeekStart}
                   weekStartsOn={settings.weekStartsOn}
+                  onResync={resyncCalendars}
                 />
               </div>
               <CalendarSidebar

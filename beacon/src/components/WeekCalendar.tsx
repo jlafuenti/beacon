@@ -26,6 +26,8 @@ interface WeekCalendarProps {
   onEventReschedule?: (event: CalendarEvent, newDate: string, newHour: number) => void;
   onVisibleWeekChange?: (weekStart: Date) => void;
   weekStartsOn: 0 | 1;
+  /** Lafuenti fork: re-pull every calendar from its provider, then reload the week. */
+  onResync?: () => Promise<void>;
 }
 
 const START_HOUR = 7;
@@ -69,7 +71,14 @@ interface MultiDaySpan {
   lane: number;
 }
 
-export function WeekCalendar({ events, hiddenCalendars, onEventClick, onSlotClick, onEventReschedule, onVisibleWeekChange, weekStartsOn }: WeekCalendarProps) {
+export function WeekCalendar({ events, hiddenCalendars, onEventClick, onSlotClick, onEventReschedule, onVisibleWeekChange, weekStartsOn, onResync }: WeekCalendarProps) {
+  const [resyncing, setResyncing] = useState(false);
+  const handleResync = async () => {
+    if (!onResync || resyncing) return;
+    setResyncing(true);
+    try { await onResync(); } catch (err) { console.error('Calendar resync failed:', err); }
+    finally { setResyncing(false); }
+  };
   const today = new Date();
   const todayWeekStart = startOfWeek(today, { weekStartsOn });
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -467,6 +476,18 @@ export function WeekCalendar({ events, hiddenCalendars, onEventClick, onSlotClic
           >
             +4w
           </button>
+          {onResync && (
+            <button
+              type="button"
+              className={`week-nav-jump-btn week-nav-resync ${resyncing ? 'week-nav-resync--busy' : ''}`}
+              onClick={handleResync}
+              disabled={resyncing}
+              aria-label={t('weekCalendar.resyncAria')}
+              title={t('weekCalendar.resyncAria')}
+            >
+              <span className="week-nav-resync-icon" aria-hidden="true">&#x27F3;</span>
+            </button>
+          )}
         </div>
       </div>
 

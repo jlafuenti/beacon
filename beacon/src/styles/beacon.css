@@ -686,6 +686,23 @@ a:focus:not(:focus-visible) {
   border-color: var(--border);
 }
 
+/* Lafuenti fork: calendar resync button */
+.week-nav-resync-icon {
+  display: inline-block;
+  font-size: 18px;
+  line-height: 1;
+}
+.week-nav-resync--busy .week-nav-resync-icon {
+  animation: week-nav-resync-spin 0.9s linear infinite;
+}
+.week-nav-resync:disabled {
+  cursor: default;
+  color: var(--text-muted);
+}
+@keyframes week-nav-resync-spin {
+  to { transform: rotate(360deg); }
+}
+
 .week-nav-today--active,
 .week-nav-today:disabled {
   background: transparent;

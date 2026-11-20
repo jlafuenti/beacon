@@ -109,6 +109,7 @@ export const ko: Record<TranslationKey, string> = {
   'weekCalendar.nextWeek': '다음 주',
   'weekCalendar.back4WeeksAria': '4주 전으로',
   'weekCalendar.forward4WeeksAria': '4주 후로',
+  'weekCalendar.resyncAria': '모든 캘린더 다시 동기화',
   'weekCalendar.previousDays': '이전 날짜',
   'weekCalendar.nextDays': '다음 날짜',
   'weekCalendar.dayGroup': '날짜 그룹 {n}',

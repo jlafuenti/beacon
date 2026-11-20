@@ -109,6 +109,7 @@ export const nl: Record<TranslationKey, string> = {
   'weekCalendar.nextWeek': 'Volgende week',
   'weekCalendar.back4WeeksAria': '4 weken terug',
   'weekCalendar.forward4WeeksAria': '4 weken vooruit',
+  'weekCalendar.resyncAria': 'Alle agenda\'s opnieuw synchroniseren',
   'weekCalendar.previousDays': 'Vorige dagen',
   'weekCalendar.nextDays': 'Volgende dagen',
   'weekCalendar.dayGroup': 'Dagengroep {n}',

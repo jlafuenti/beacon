@@ -109,6 +109,7 @@ export const es: Record<TranslationKey, string> = {
   'weekCalendar.nextWeek': 'Semana siguiente',
   'weekCalendar.back4WeeksAria': 'Retroceder 4 semanas',
   'weekCalendar.forward4WeeksAria': 'Avanzar 4 semanas',
+  'weekCalendar.resyncAria': 'Volver a sincronizar todos los calendarios',
   'weekCalendar.previousDays': 'Días anteriores',
   'weekCalendar.nextDays': 'Días siguientes',
   'weekCalendar.dayGroup': 'Grupo de días {n}',

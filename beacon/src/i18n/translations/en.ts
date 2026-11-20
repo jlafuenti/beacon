@@ -114,6 +114,7 @@ export const en = {
   'weekCalendar.nextWeek': 'Next week',
   'weekCalendar.back4WeeksAria': 'Back 4 weeks',
   'weekCalendar.forward4WeeksAria': 'Forward 4 weeks',
+  'weekCalendar.resyncAria': 'Resync all calendars',
   'weekCalendar.previousDays': 'Previous days',
   'weekCalendar.nextDays': 'Next days',
   'weekCalendar.dayGroup': 'Day group {n}',
