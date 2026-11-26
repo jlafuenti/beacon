@@ -2,9 +2,10 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react';
 import { GroceryList } from '../types/grocery';
 import { AnyListClient } from '../api/anylist';
-import { callHaService, hasToken } from '../api/ha-rest';
+import { callHaService, getEntityState, hasToken } from '../api/ha-rest';
 import { useLocalTasks } from '../hooks/useLocalTasks';
 import { useTranslation } from '../i18n';
+import { indentedUids, parseItemParents } from '../utils/todoNesting';
 
 interface TodoItem {
   uid: string;
@@ -29,6 +30,8 @@ function isGroceryList(name: string): boolean {
   const lower = name.toLowerCase();
   return GROCERY_KEYWORDS.some(kw => lower.includes(kw));
 }
+
+const EMPTY_PARENTS: Record<string, string> = {};
 
 export type ListViewMode = 'grocery' | 'tasks';
 
@@ -55,6 +58,8 @@ export function GroceryView({
   const [haLists, setHaLists] = useState<GroceryList[]>([]);
   const [selectedListId, setSelectedListId] = useState<string>(defaultListId || '');
   const [haItems, setHaItems] = useState<TodoItem[]>([]);
+  /** child uid -> parent uid, from the todo entity's `item_parents` attribute (Google Keep sub-items) */
+  const [haParents, setHaParents] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [inputValue, setInputValue] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -157,17 +162,22 @@ export function GroceryView({
     setLoading(true);
 
     try {
-      const result = await callHaService('todo', 'get_items', {
-        entity_id: entityId,
-      }, true) as {
-        service_response?: Record<string, { items?: TodoItem[] }>;
-      };
+      const [result, state] = await Promise.all([
+        callHaService('todo', 'get_items', {
+          entity_id: entityId,
+        }, true) as Promise<{
+          service_response?: Record<string, { items?: TodoItem[] }>;
+        }>,
+        getEntityState(entityId),
+      ]);
 
       const entityResponse = result?.service_response?.[entityId];
       setHaItems(entityResponse?.items ?? []);
+      setHaParents(parseItemParents(state?.attributes?.item_parents));
     } catch (err) {
       console.warn('GroceryView: Failed to load items', err);
       setHaItems([]);
+      setHaParents({});
     } finally {
       setLoading(false);
     }
@@ -198,6 +208,13 @@ export function GroceryView({
     () => items.filter(i => i.status === 'completed'),
     [items],
   );
+
+  // A sub-item is indented only when its parent sits in the same section, so a
+  // checked child under an open parent (or vice versa) never floats indented
+  // under an unrelated item.
+  const parents = isLocal ? EMPTY_PARENTS : haParents;
+  const indentedUnchecked = useMemo(() => indentedUids(uncheckedItems, parents), [uncheckedItems, parents]);
+  const indentedChecked = useMemo(() => indentedUids(checkedItems, parents), [checkedItems, parents]);
 
   // Add item
   const handleAdd = useCallback(async (e: React.FormEvent) => {
@@ -326,7 +343,10 @@ export function GroceryView({
                   {t('grocery.items', { count: uncheckedItems.length })}
                 </div>
                 {uncheckedItems.map(item => (
-                  <div key={item.uid} className="grocery-view-item-row">
+                  <div
+                    key={item.uid}
+                    className={`grocery-view-item-row${indentedUnchecked.has(item.uid) ? ' grocery-view-item-row--indented' : ''}`}
+                  >
                     <button
                       type="button"
                       className="grocery-view-item"
@@ -362,7 +382,10 @@ export function GroceryView({
                   {t('grocery.completed', { count: checkedItems.length })}
                 </button>
                 {!completedCollapsed && checkedItems.map(item => (
-                  <div key={item.uid} className="grocery-view-item-row">
+                  <div
+                    key={item.uid}
+                    className={`grocery-view-item-row${indentedChecked.has(item.uid) ? ' grocery-view-item-row--indented' : ''}`}
+                  >
                     <button
                       type="button"
                       className="grocery-view-item grocery-view-item--checked"

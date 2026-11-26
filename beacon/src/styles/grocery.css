@@ -229,6 +229,10 @@
   align-items: center;
 }
 
+.grocery-view-item-row--indented {
+  padding-left: 38px; /* checkbox (24px) + gap (14px): child checkbox lines up under parent text, as in Keep */
+}
+
 .grocery-view-item-row .grocery-view-item {
   flex: 1;
   min-width: 0;
