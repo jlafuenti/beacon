@@ -1,0 +1,87 @@
+# PROPOSED, NOT APPLIED. Replaces script.voice_alarm_run (scripts.yaml, UI-managed)
+# at ship time, through the script editor or ha_config_set_script.
+# Only the sequence changes: the plain delay becomes a cancellable wait, and the
+# run reports itself to sensor.voice_alarms. Fields stay the same plus an
+# optional alarm_id, so automation.voice_alarm_set needs no change.
+# The previous definition is in backup-voice-alarm-2026-11-26.yaml.
+
+voice_alarm_run:
+  alias: "Voice alarm: run"
+  icon: mdi:alarm
+  mode: parallel
+  max: 10
+  description: >-
+    One running instance per voice alarm. Started by the automation Voice alarm: set,
+    never called by an assistant. Waits until the alarm time, then announces on the
+    satellite that heard the request. Cancel all with Voice alarm: cancel
+    (script.turn_off stops every pending alarm); cancel one with
+    script.voice_alarm_cancel_one. Pending alarms are listed in sensor.voice_alarms.
+    Lost if HA restarts before it fires. Created 2026-10-09 for the Jarvis issue of
+    10-01; cancellable per alarm since 2026-11-26.
+  fields:
+    target:
+      name: Target
+      description: Alarm time, ISO datetime.
+      required: true
+      selector:
+        text: {}
+    satellite:
+      name: Satellite
+      description: assist_satellite entity to ring on.
+      required: true
+      selector:
+        entity:
+          domain: assist_satellite
+    label:
+      name: Label
+      description: Spoken time, e.g. 12:20 PM.
+      required: true
+      selector:
+        text: {}
+    alarm_id:
+      name: Alarm id
+      description: Optional. Generated when left out.
+      required: false
+      selector:
+        text: {}
+  sequence:
+    - variables:
+        aid: "{{ alarm_id | default('', true) or ((as_timestamp(now()) * 1000) | int | string) ~ '-' ~ (range(100, 999) | random) }}"
+        wait_seconds: "{{ [((as_datetime(target) - now()).total_seconds()) | int, 0] | max }}"
+        sat_device: "{{ device_id(satellite) }}"
+        sat_name: "{{ (device_attr(sat_device, 'name_by_user') or device_attr(sat_device, 'name')) if sat_device else (state_attr(satellite, 'friendly_name') or satellite) }}"
+    - alias: List it in sensor.voice_alarms
+      event: voice_alarm_added
+      event_data:
+        id: "{{ aid }}"
+        at: "{{ as_datetime(target).isoformat() }}"
+        label: "{{ label }}"
+        satellite: "{{ satellite }}"
+        satellite_name: "{{ sat_name }}"
+    - alias: Wait until the alarm time, or until this alarm is cancelled
+      wait_for_trigger:
+        - trigger: event
+          event_type: voice_alarm_cancel
+          event_data:
+            id: "{{ aid }}"
+      timeout:
+        seconds: "{{ wait_seconds }}"
+      continue_on_timeout: true
+    - alias: Drop it from the list (fired or cancelled)
+      event: voice_alarm_removed
+      event_data:
+        id: "{{ aid }}"
+        reason: "{{ 'cancelled' if wait.trigger is not none else 'fired' }}"
+    - alias: Cancelled, so no ring
+      if:
+        - condition: template
+          value_template: "{{ wait.trigger is not none }}"
+      then:
+        - stop: Cancelled
+    - alias: Ring on the satellite that heard the request
+      action: assist_satellite.announce
+      target:
+        entity_id: "{{ satellite }}"
+      data:
+        message: "It's {{ label }}. This is your alarm."
+        preannounce: true

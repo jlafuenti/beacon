@@ -1,3 +1,9 @@
+# [1.40.0-lafuenti.22](https://github.com/jlafuenti/beacon/tree/lafuenti) (2026-11-26)
+
+### Features
+
+* **timers:** new Timers & Alarms tab. It lists every Assist voice timer in the house (from any satellite, through HassTimerStatus over the add-on's new `/beacon-action/timers` bridge, cached and shared by open tabs), running tummy-time timers, Kiosk Satellite alarms, satellite firmware alarms and pending voice alarms. Kiosk timers are paused, resumed and cancelled by id; other satellites' timers by the built-in timer sentence sent as that satellite. Tummy time stops through its logging script. Destructive buttons need a second tap. Configured through settings-file keys (`timerKioskNodes`, `timerDeviceNames`, `tummyTimers`, `kioskAlarmDevices`, `satelliteAlarms`, `voiceAlarmsEntity`)
+
 # [1.40.0-lafuenti.17](https://github.com/jlafuenti/beacon/tree/lafuenti) (2026-11-15)
 
 ### Bug Fixes

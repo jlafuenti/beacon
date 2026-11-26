@@ -15,6 +15,7 @@ import './styles/settings.css';
 import './styles/weather.css';
 import './styles/alarm.css';
 import './styles/cameras.css';
+import './styles/house-timers.css';
 import './styles/focus.css';
 import { initNativeBridge } from './native';
 import { applyStoredTheme } from './hooks/useTheme';

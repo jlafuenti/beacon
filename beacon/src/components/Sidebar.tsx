@@ -13,13 +13,14 @@ import {
   CloudSun,
   ShieldCheck,
   Cctv,
+  AlarmClock,
   MoreHorizontal,
   X,
 } from 'lucide-react';
 import beaconIcon from '../assets/beacon-app-icon.svg';
 import { useTranslation, type TranslationKey } from '../i18n';
 
-export type SidebarView = 'dashboard' | 'calendar' | 'chores' | 'grocery' | 'tasks' | 'leaderboard' | 'music' | 'photos' | 'timer' | 'weather' | 'cameras' | 'alarm' | 'settings';
+export type SidebarView = 'dashboard' | 'calendar' | 'chores' | 'grocery' | 'tasks' | 'leaderboard' | 'music' | 'photos' | 'timer' | 'weather' | 'cameras' | 'housetimers' | 'alarm' | 'settings';
 
 interface SidebarProps {
   activeView: SidebarView;
@@ -53,6 +54,7 @@ export const NAV_ITEMS: NavItem[] = [
   { id: 'timer', icon: <TimerIcon size={ICON_SIZE} strokeWidth={STROKE_WIDTH} />, labelKey: 'nav.timer' },
   { id: 'weather', icon: <CloudSun size={ICON_SIZE} strokeWidth={STROKE_WIDTH} />, labelKey: 'nav.weather' },
   { id: 'cameras', icon: <Cctv size={ICON_SIZE} strokeWidth={STROKE_WIDTH} />, labelKey: 'nav.cameras' },
+  { id: 'housetimers', icon: <AlarmClock size={ICON_SIZE} strokeWidth={STROKE_WIDTH} />, labelKey: 'nav.houseTimers' },
   { id: 'alarm', icon: <ShieldCheck size={ICON_SIZE} strokeWidth={STROKE_WIDTH} />, labelKey: 'nav.alarm' },
 ];
 
