@@ -55,6 +55,8 @@ template:
             {%- endif -%}
             {{ ns.l }}
 
+# No selector on alarm_id: here `text: {}` reached validation as an empty
+# selector and disabled the script. Service calls work the same without it.
 script:
   voice_alarm_cancel_one:
     alias: "Voice alarm: cancel one"
@@ -69,8 +71,7 @@ script:
         name: Alarm id
         description: The id from sensor.voice_alarms' alarms attribute.
         required: true
-        selector:
-          text: {}
+        example: "1764188000000-512"
     sequence:
       - event: voice_alarm_cancel
         event_data:
