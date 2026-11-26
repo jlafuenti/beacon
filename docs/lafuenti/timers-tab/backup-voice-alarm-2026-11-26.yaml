@@ -1,0 +1,93 @@
+# Backup taken 2026-11-26 (read-only copy from /config) before the Timers tab change.
+# Restore: paste voice_alarm_run back through the script editor; the automations are unchanged by this proposal.
+automations.yaml (entries):
+- id: '1791594713725'
+  alias: 'Voice alarm: set'
+  description: 'Local "set an alarm for 12:20" (Jarvis issue 10-01). HA has no official alarm intent and native timers cannot be started from an automation, so this parses the spoken time and starts script.voice_alarm_run, which announces on the satellite that heard the request. A bare hour with no AM/PM prefers 6 AM-10 PM; the reply always speaks the full time so a wrong guess is heard. Cancel with Voice alarm: cancel. Created 2026-10-09.'
+  triggers:
+  - trigger: conversation
+    command:
+    - set [an|a|the] alarm (for|at) {time}
+    - '[an] alarm (for|at) {time}'
+  actions:
+  - if:
+    - condition: template
+      value_template: '{{ target == ''none'' }}'
+    then:
+    - set_conversation_response: '{{ ''For a countdown, say: set a timer for '' ~ spoken ~ ''.'' if (''minute'' in spoken or ''hour'' in spoken or ''second'' in spoken) else "Sorry, I didn''t catch the time. Try: set an alarm for 3 PM." }}'
+    - stop: Could not parse the alarm time
+  - action: script.turn_on
+    target:
+      entity_id: script.voice_alarm_run
+    data:
+      variables:
+        target: '{{ target }}'
+        satellite: '{{ satellite }}'
+        label: '{{ as_local(as_datetime(target)).strftime(''%-I:%M %p'') }}'
+  - set_conversation_response: Alarm set for {{ label }}.
+  mode: parallel
+  max: 10
+  variables:
+    spoken: '{{ trigger.slots.time | default('''') }}'
+    target: '{%- set raw = (spoken | lower | replace(''a.m.'',''am'') | replace(''p.m.'',''pm'') | replace("o''clock",'''') | replace(''noon'',''12:00 pm'') | replace(''midnight'',''12:00 am'') | regex_replace(''(\\d)\\.(\\d)'',''\\1:\\2'') | regex_replace(''[^0-9:apm ]'','''') | trim) -%}{%- set m = raw | regex_findall(''^(\\d{1,2}):?(\\d{2})?\\s*(am|pm)?$'') -%}{%- if not m -%}none{%- else -%}{%- set h = m[0][0] | int -%}{%- set mi = (m[0][1] or ''0'') | int -%}{%- set ap = m[0][2] -%}{%- if h > 23 or mi > 59 or (ap and (h < 1 or h > 12)) -%}none{%- else -%}{%- if ap == ''pm'' -%}{%- set hs = [h % 12 + 12] -%}{%- elif ap == ''am'' -%}{%- set hs = [h % 12] -%}{%- elif h > 12 or h == 0 -%}{%- set hs = [h] -%}{%- else -%}{%- set hs = [h % 12, h % 12 + 12] -%}{%- endif -%}{%- set ns = namespace(day=none, any=none) -%}{%- for hh in hs -%}{%- set t = today_at(''%02d:%02d'' % (hh, mi)) -%}{%- if t <= now() -%}{%- set t = t + timedelta(days=1) -%}{%- endif -%}{%- if ns.any is none or t < ns.any -%}{%- set ns.any = t -%}{%- endif -%}{%- if 6 <= hh < 22 and (ns.day is none or t < ns.day) -%}{%- set ns.day = t -%}{%- endif -%}{%- endfor -%}{{- (ns.day if (ns.day is not none and hs | length > 1) else ns.any).isoformat() -}}{%- endif -%}{%- endif -%}'
+    satellite: '{%- set s = trigger.satellite_id | default('''', true) -%}{%- if not (s and s.startswith(''assist_satellite.'')) and trigger.device_id | default('''', true) -%}{%- set s = device_entities(trigger.device_id) | select(''match'', ''assist_satellite\\.'') | first | default('''') -%}{%- endif -%}{{ s if (s and states(s) not in [''unknown'', ''unavailable'']) else ''assist_satellite.satellite1_2e662c_assist_satellite'' }}'
+    label: '{%- if target != ''none'' -%}{%- set t = as_datetime(target) -%}{{ as_local(t).strftime(''%-I:%M %p'') }}{{ '' tomorrow'' if as_local(t).date() != now().date() else '''' }}{%- endif -%}'
+- id: '1791594719381'
+  alias: 'Voice alarm: cancel'
+  description: 'Local "cancel the alarm": stops every pending run of script.voice_alarm_run. Deliberately no "turn off the alarm" phrasing, which could be meant for the Vivint panel. Created 2026-10-09.'
+  triggers:
+  - trigger: conversation
+    command:
+    - (cancel|delete|clear) [the|my|all] [the] alarm[s]
+    - (cancel|delete|clear) [the|my] [all] alarms
+  actions:
+  - if:
+    - condition: state
+      entity_id: script.voice_alarm_run
+      state: 'on'
+    then:
+    - action: script.turn_off
+      target:
+        entity_id: script.voice_alarm_run
+    - set_conversation_response: Alarm cancelled.
+    else:
+    - set_conversation_response: There's no alarm set.
+  mode: single
+scripts.yaml (entry):
+  voice_alarm_run:
+    alias: 'Voice alarm: run'
+    icon: mdi:alarm
+    mode: parallel
+    max: 10
+    description: 'One running instance per voice alarm. Started by the automation Voice alarm: set, never called by an assistant. Waits until the alarm time, then announces on the satellite that heard the request. Cancelled by Voice alarm: cancel (script.turn_off stops every pending alarm). Lost if HA restarts before it fires. Created 2026-10-09 for the Jarvis issue of 10-01.'
+    fields:
+      target:
+        name: Target
+        description: Alarm time, ISO datetime.
+        required: true
+        selector:
+          text: {}
+      satellite:
+        name: Satellite
+        description: assist_satellite entity to ring on.
+        required: true
+        selector:
+          entity:
+            domain: assist_satellite
+      label:
+        name: Label
+        description: Spoken time, e.g. 12:20 PM.
+        required: true
+        selector:
+          text: {}
+    sequence:
+    - alias: Wait until the alarm time
+      delay:
+        seconds: '{{ [((as_datetime(target) - now()).total_seconds()) | int, 0] | max }}'
+    - alias: Ring on the satellite that heard the request
+      action: assist_satellite.announce
+      target:
+        entity_id: '{{ satellite }}'
+      data:
+        message: It's {{ label }}. This is your alarm.
+        preannounce: true

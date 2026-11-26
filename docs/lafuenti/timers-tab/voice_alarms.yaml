@@ -1,0 +1,77 @@
+# PROPOSED, NOT APPLIED. Goes to /config/packages/voice_alarms.yaml at ship time.
+#
+# Voice alarms store for the Beacon Timers & Alarms tab (2026-11-26).
+# script.voice_alarm_run (see voice_alarm_run.yaml next to this file) fires
+#   voice_alarm_added   {id, at, label, satellite, satellite_name}  when a run starts
+#   voice_alarm_removed {id, reason}                                when it fires or is cancelled
+# and waits for voice_alarm_cancel {id} instead of a plain delay, so one alarm
+# can be cancelled without stopping the others.
+#
+# sensor.voice_alarms keeps the pending list in its `alarms` attribute. It is
+# emptied on HA start (pending script runs do not survive a restart) and
+# whenever script.voice_alarm_run goes off (no runs left, including the
+# "cancel the alarm" voice command, which turns the whole script off).
+
+template:
+  - triggers:
+      - trigger: homeassistant
+        event: start
+        id: cleared
+      - trigger: state
+        entity_id: script.voice_alarm_run
+        to: "off"
+        id: cleared
+      - trigger: event
+        event_type: voice_alarm_added
+        id: added
+      - trigger: event
+        event_type: voice_alarm_removed
+        id: removed
+    sensor:
+      - name: Voice alarms
+        unique_id: voice_alarms_store
+        default_entity_id: sensor.voice_alarms
+        icon: mdi:alarm-multiple
+        # Same list as the attribute below, counted. (`this` is the state
+        # before this trigger, so the state cannot read the new attribute.)
+        state: >-
+          {%- set old = (this.attributes.alarms | default([])) if trigger.id != 'cleared' else [] -%}
+          {%- set d = trigger.event.data if trigger.id in ['added', 'removed'] else {} -%}
+          {%- set ns = namespace(l=[]) -%}
+          {%- for a in old if a.id != d.get('id') and as_datetime(a.at, now()) > now() - timedelta(minutes=5) -%}
+            {%- set ns.l = ns.l + [a] -%}
+          {%- endfor -%}
+          {{ (ns.l | count) + (1 if trigger.id == 'added' else 0) }}
+        attributes:
+          alarms: >-
+            {%- set old = (this.attributes.alarms | default([])) if trigger.id != 'cleared' else [] -%}
+            {%- set d = trigger.event.data if trigger.id in ['added', 'removed'] else {} -%}
+            {%- set ns = namespace(l=[]) -%}
+            {%- for a in old if a.id != d.get('id') and as_datetime(a.at, now()) > now() - timedelta(minutes=5) -%}
+              {%- set ns.l = ns.l + [a] -%}
+            {%- endfor -%}
+            {%- if trigger.id == 'added' -%}
+              {%- set ns.l = ns.l + [{'id': d.id, 'at': d.at, 'label': d.label, 'satellite': d.satellite, 'satellite_name': d.satellite_name}] -%}
+            {%- endif -%}
+            {{ ns.l }}
+
+script:
+  voice_alarm_cancel_one:
+    alias: "Voice alarm: cancel one"
+    icon: mdi:alarm-off
+    mode: queued
+    description: >-
+      Cancels one pending voice alarm by its id (sensor.voice_alarms lists them).
+      Used by the Beacon Timers tab. The other pending alarms keep running.
+      Created 2026-11-26.
+    fields:
+      alarm_id:
+        name: Alarm id
+        description: The id from sensor.voice_alarms' alarms attribute.
+        required: true
+        selector:
+          text: {}
+    sequence:
+      - event: voice_alarm_cancel
+        event_data:
+          id: "{{ alarm_id }}"

@@ -305,6 +305,223 @@ function handleCameraStreamAction(req, res) {
   });
 }
 
+/* ------------------------------------------------------------------ */
+/*  Timers tab (Lafuenti fork)                                         */
+/*                                                                     */
+/*  Assist voice timers live in HA core's timer manager. Core has no   */
+/*  service or WebSocket command that lists them; the only read is the */
+/*  HassTimerStatus intent, reached through conversation/process. That */
+/*  answers for every timer in the house, whichever satellite set it,  */
+/*  in speech_slots.timers. Each ask is one conversation turn (and one */
+/*  debug log entry when the conversation logger is at debug), so the  */
+/*  answer is cached here and shared by every open Timers tab; the     */
+/*  browser counts down between refreshes.                             */
+/* ------------------------------------------------------------------ */
+
+const VOICE_TIMER_MIN_MS = 3000;
+const VOICE_TIMER_MAX_MS = 120000;
+const DEVICE_INFO_TTL_MS = 10 * 60 * 1000;
+const ENTITY_ID_RE = /^[a-z0-9_]+\.[a-z0-9_]+$/;
+const DEVICE_ID_RE = /^[a-zA-Z0-9]{1,64}$/;
+const ESPHOME_NODE_RE = /^[a-z0-9_]{1,64}$/;
+const TIMER_ACTIONS = new Set(['pause', 'resume', 'cancel']);
+/** The only sentences the control path may send: the built-in timer intents' own forms. */
+const TIMER_SENTENCE_RE = /^(pause|resume|cancel) the .{1,80} timer$/;
+
+const voiceTimerCache = { at: 0, timers: [], error: null, pending: null };
+const deviceInfoCache = { at: 0, byId: {} };
+
+async function fetchVoiceTimers() {
+  const result = await haWsCommand({
+    type: 'conversation/process',
+    text: 'timer status',
+    language: 'en',
+    agent_id: 'conversation.home_assistant',
+  }, 10000);
+  const response = result && result.response;
+  const timers = response && response.speech_slots && Array.isArray(response.speech_slots.timers)
+    ? response.speech_slots.timers
+    : [];
+  // "No timers" comes back as an action_done with no timers slot, or as an
+  // error response; both mean an empty list, not a failure.
+  return timers.map((t) => ({
+    id: String(t.id || ''),
+    name: typeof t.name === 'string' ? t.name : '',
+    device_id: typeof t.device_id === 'string' ? t.device_id : '',
+    is_active: t.is_active !== false,
+    start_hours: Number(t.start_hours) || 0,
+    start_minutes: Number(t.start_minutes) || 0,
+    start_seconds: Number(t.start_seconds) || 0,
+    total_seconds_left: Number(t.total_seconds_left) || 0,
+  })).filter((t) => t.id);
+}
+
+/** Cached voice timer list; refreshes at most every maxAgeMs, one HA ask at a time. */
+async function getVoiceTimers(maxAgeMs) {
+  const now = Date.now();
+  if (now - voiceTimerCache.at < maxAgeMs) return voiceTimerCache;
+  if (!voiceTimerCache.pending) {
+    voiceTimerCache.pending = fetchVoiceTimers()
+      .then((timers) => {
+        voiceTimerCache.timers = timers;
+        voiceTimerCache.error = null;
+      })
+      .catch((err) => {
+        voiceTimerCache.error = err.message;
+      })
+      .finally(() => {
+        voiceTimerCache.at = Date.now();
+        voiceTimerCache.pending = null;
+      });
+  }
+  await voiceTimerCache.pending;
+  return voiceTimerCache;
+}
+
+/** device_id → { name, area } through one template render, cached for ten minutes. */
+async function getDeviceInfo(deviceIds) {
+  const missing = deviceIds.filter((id) => !(id in deviceInfoCache.byId));
+  if (missing.length === 0 && Date.now() - deviceInfoCache.at < DEVICE_INFO_TTL_MS) {
+    return deviceInfoCache.byId;
+  }
+  const ids = deviceIds.filter((id) => DEVICE_ID_RE.test(id));
+  if (ids.length === 0) return deviceInfoCache.byId;
+  const template = `{% set ns = namespace(d={}) %}{% for id in ${JSON.stringify(ids)} %}`
+    + `{% set ns.d = dict(ns.d, **{id: {'name': device_attr(id, 'name_by_user') or device_attr(id, 'name') or '', 'area': area_name(id) or ''}}) %}`
+    + `{% endfor %}{{ ns.d | tojson }}`;
+  try {
+    const r = await haRequest('POST', '/api/template', { template });
+    const parsed = typeof r.data === 'string' ? JSON.parse(r.data) : r.data;
+    if (parsed && typeof parsed === 'object') {
+      deviceInfoCache.byId = { ...deviceInfoCache.byId, ...parsed };
+      deviceInfoCache.at = Date.now();
+    }
+  } catch { /* names are cosmetic */ }
+  return deviceInfoCache.byId;
+}
+
+async function getEntityStates(entityIds) {
+  const wanted = entityIds.filter((id) => typeof id === 'string' && ENTITY_ID_RE.test(id)).slice(0, 60);
+  const out = {};
+  await Promise.all(wanted.map(async (id) => {
+    try {
+      const r = await haRequest('GET', `/api/states/${id}`);
+      if (r.status === 200 && r.data && typeof r.data === 'object') {
+        out[id] = { entity_id: id, state: r.data.state, attributes: r.data.attributes || {} };
+      }
+    } catch { /* missing entities are left out */ }
+  }));
+  return out;
+}
+
+/**
+ * POST /beacon-action/timers
+ *
+ * { op: 'list', voice: bool, voice_max_age_ms, entity_ids: [] }
+ *   → { voice_timers, voice_fetched_at, voice_error, devices, entities, now }
+ *
+ * { op: 'control', action: 'pause'|'resume'|'cancel', timer_id, kiosk_node }
+ *   Kiosk Satellite devices: esphome.<node>_vs_<action>_timer { timer_id }.
+ * { op: 'control', action, text, device_id }
+ *   Other satellites: conversation/process with that satellite's device_id
+ *   and one of the built-in timer sentences ("pause the potatoes timer").
+ */
+function handleTimersAction(req, res) {
+  if (req.method !== 'POST') {
+    res.writeHead(405, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Method not allowed' }));
+    return;
+  }
+
+  collectBody(req).then(async (bodyBuf) => {
+    const send = (status, body) => {
+      res.writeHead(status, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(body));
+    };
+    try {
+      const body = JSON.parse((bodyBuf || '{}').toString('utf8'));
+
+      if (body.op === 'list') {
+        const maxAge = Math.min(VOICE_TIMER_MAX_MS, Math.max(VOICE_TIMER_MIN_MS, Number(body.voice_max_age_ms) || 10000));
+        const [voice, entities] = await Promise.all([
+          body.voice === false ? Promise.resolve(null) : getVoiceTimers(maxAge),
+          getEntityStates(Array.isArray(body.entity_ids) ? body.entity_ids : []),
+        ]);
+        const timers = voice ? voice.timers : [];
+        const devices = timers.length > 0
+          ? await getDeviceInfo([...new Set(timers.map((t) => t.device_id).filter(Boolean))])
+          : {};
+        send(200, {
+          voice_timers: timers,
+          voice_fetched_at: voice ? voice.at : null,
+          voice_error: voice ? voice.error : null,
+          devices,
+          entities,
+          now: Date.now(),
+        });
+        return;
+      }
+
+      if (body.op === 'control') {
+        const action = String(body.action || '');
+        if (!TIMER_ACTIONS.has(action)) {
+          send(400, { error: 'action must be pause, resume or cancel' });
+          return;
+        }
+        let via;
+        let speech = null;
+        if (body.kiosk_node) {
+          const node = String(body.kiosk_node);
+          const timerId = String(body.timer_id || '');
+          if (!ESPHOME_NODE_RE.test(node) || !timerId || timerId.length > 64) {
+            send(400, { error: 'Invalid kiosk_node or timer_id' });
+            return;
+          }
+          const r = await haRequest('POST', `/api/services/esphome/${node}_vs_${action}_timer`, { timer_id: timerId });
+          if (r.status >= 300) {
+            send(502, { error: `esphome.${node}_vs_${action}_timer failed (${r.status})` });
+            return;
+          }
+          via = `esphome.${node}_vs_${action}_timer`;
+        } else {
+          const text = String(body.text || '');
+          const deviceId = String(body.device_id || '');
+          if (!TIMER_SENTENCE_RE.test(text) || !text.startsWith(action) || !DEVICE_ID_RE.test(deviceId)) {
+            send(400, { error: 'Invalid timer sentence or device_id' });
+            return;
+          }
+          const result = await haWsCommand({
+            type: 'conversation/process',
+            text,
+            language: 'en',
+            agent_id: 'conversation.home_assistant',
+            device_id: deviceId,
+          }, 10000);
+          const response = result && result.response;
+          speech = response && response.speech && response.speech.plain ? response.speech.plain.speech : null;
+          if (!response || response.response_type === 'error') {
+            send(502, { error: speech || 'Home Assistant could not find that timer', speech });
+            return;
+          }
+          via = 'conversation';
+        }
+        voiceTimerCache.at = 0; // the next list asks HA again
+        send(200, { ok: true, via, speech });
+        return;
+      }
+
+      send(400, { error: 'op must be list or control' });
+    } catch (err) {
+      send(502, { error: err.message, code: err.code || null });
+    }
+  }).catch((err) => {
+    if (!res.headersSent) {
+      res.writeHead(413, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+  });
+}
+
 /**
  * POST /beacon-action/calendar-event
  * Body: { op: 'create'|'update'|'delete', entity_id, uid?, event? }
@@ -894,6 +1111,12 @@ const server = http.createServer((req, res) => {
   // Camera HLS stream (WS-only command in HA core)
   if (req.url === '/beacon-action/camera-stream') {
     handleCameraStreamAction(req, res);
+    return;
+  }
+
+  // Timers tab: Assist voice timers list + control (Lafuenti fork)
+  if (req.url === '/beacon-action/timers') {
+    handleTimersAction(req, res);
     return;
   }
 

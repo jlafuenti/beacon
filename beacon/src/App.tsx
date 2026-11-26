@@ -18,6 +18,7 @@ import { Leaderboard } from './components/Leaderboard';
 import { Sidebar, SidebarView, resolveVisibleNav } from './components/Sidebar';
 import { AlarmView } from './components/AlarmView';
 import { CamerasView } from './components/CamerasView';
+import { HouseTimersView } from './components/HouseTimersView';
 import { useCameraMotion } from './hooks/useCameraMotion';
 import { MusicView } from './components/MusicView';
 import { PhotoFrame } from './components/PhotoFrame';
@@ -895,6 +896,8 @@ export function App() {
             focusId={cameraFocus}
             onFocusChange={setCameraFocus}
           />
+        ) : activeView === 'housetimers' ? (
+          <HouseTimersView settings={settings} />
         ) : activeView === 'alarm' ? (
           <AlarmView entityId={settings.alarmEntity} showNight={settings.alarmShowNight} />
         ) : activeView === 'timer' ? (

@@ -71,6 +71,26 @@ export interface BeaconSettings {
   cameraAutoSwitch: boolean;
   /** Seconds to keep the camera up after every sensor is off again. */
   cameraAutoSwitchHold: number;
+  // ---- Timers tab (Lafuenti fork; settings file only, no UI) ----
+  /** List Assist voice timers from every satellite (one HassTimerStatus ask per refresh). */
+  timersVoiceEnabled: boolean;
+  /** How old the shared voice timer list may get before the add-on asks HA again (seconds, 3-120). */
+  timersVoiceRefreshSeconds: number;
+  /** Kiosk Satellite device_id → ESPHome node name; those timers are paused/cancelled by id. */
+  timerKioskNodes: Record<string, string>;
+  /** device_id → short name shown on a timer (overrides the HA device name). */
+  timerDeviceNames: Record<string, string>;
+  /** HA timer helper → child name, stopped or cancelled through `tummyTimerScript`, never timer.cancel. */
+  tummyTimers: Record<string, string>;
+  tummyTimerScript: string;
+  /** Kiosk Satellite alarm entity stems: sensor.<prefix>_next_alarm, button.<prefix>_stop_alarm, ... */
+  kioskAlarmDevices: Array<{ prefix: string; name: string }>;
+  /** Satellite firmware alarms: an arm switch plus a time entity. */
+  satelliteAlarms: Array<{ name: string; switchEntity: string; timeEntity: string }>;
+  /** Sensor whose `alarms` attribute lists pending voice alarms ('' = none). */
+  voiceAlarmsEntity: string;
+  /** Script that cancels one voice alarm, called with { alarm_id }. */
+  voiceAlarmCancelScript: string;
   photoDirectory: string;
   photoInterval: number;
   photoTransition: 'fade' | 'slide';
@@ -162,6 +182,16 @@ function buildDefaults(): BeaconSettings {
     cameraMotionSensors: {},
     cameraAutoSwitch: true,
     cameraAutoSwitchHold: 60,
+    timersVoiceEnabled: true,
+    timersVoiceRefreshSeconds: 10,
+    timerKioskNodes: {},
+    timerDeviceNames: {},
+    tummyTimers: {},
+    tummyTimerScript: 'script.log_activity',
+    kioskAlarmDevices: [],
+    satelliteAlarms: [],
+    voiceAlarmsEntity: '',
+    voiceAlarmCancelScript: 'script.voice_alarm_cancel_one',
     photoDirectory: config.photo_directory,
     photoInterval: config.photo_interval,
     photoTransition: 'fade',
